@@ -25,7 +25,9 @@ The main goal is not to replace AI assistants, but to add a personalized learnin
 - Generate adaptive learning paths and dynamic practice
 - Support long-term learning continuity across different tools and conversations
 
-## Planned System Flow
+## Initial Planned System Flow
+
+This flow represents the current high-level direction of the system and may change as the architecture, MVP scope, and implementation details are refined.
 
 ```text
 AI Conversations / IDE Work / Learning Sources
