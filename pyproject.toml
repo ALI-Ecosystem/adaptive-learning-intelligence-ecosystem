@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=75"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ali-diagnosis"
+version = "0.1.0"
+description = "Diagnosis domain contracts for the Adaptive Learning Intelligence Ecosystem"
+requires-python = ">=3.11"
+dependencies = [
+    "pydantic>=2.12,<3",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8,<10",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
