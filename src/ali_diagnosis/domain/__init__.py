@@ -1,21 +1,24 @@
 """Public domain-contract surface for the ALI Diagnosis Engine."""
 
-from .contracts import (
-    DIAGNOSIS_SCHEMA_VERSION,
+from .artifacts import (
     DiagnosticArtifact,
     DiagnosticArtifactType,
+)
+from .common import DIAGNOSIS_SCHEMA_VERSION
+from .diagnosis import (
     DiagnosticFinding,
-    DiagnosticProducer,
-    DiagnosticProducerType,
-    DiagnosticSourceKind,
-    DiagnosticSourceReference,
-    DiagnosisRunRequest,
     DiagnosisRunResult,
+    NoLearningProblemDiagnosis,
     RootCauseHypothesis,
     StructuredDiagnosis,
-    SubjectReference,
     UnresolvedDiagnosis,
     UnresolvedScope,
+)
+from .request import DiagnosisRunRequest
+from .sources import (
+    DiagnosticSourceKind,
+    DiagnosticSourceReference,
+    SubjectReference,
 )
 
 __all__ = [
@@ -23,12 +26,11 @@ __all__ = [
     "DiagnosticArtifact",
     "DiagnosticArtifactType",
     "DiagnosticFinding",
-    "DiagnosticProducer",
-    "DiagnosticProducerType",
     "DiagnosticSourceKind",
     "DiagnosticSourceReference",
     "DiagnosisRunRequest",
     "DiagnosisRunResult",
+    "NoLearningProblemDiagnosis",
     "RootCauseHypothesis",
     "StructuredDiagnosis",
     "SubjectReference",
