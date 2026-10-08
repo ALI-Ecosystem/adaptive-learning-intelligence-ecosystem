@@ -5,7 +5,7 @@
   "description": "Learner State service — Bayesian mastery projection over an append-only evidence log.",
   "license": "UNLICENSED",
   "engines": {
-    "node": ">=20.11 <23"
+    "node": ">=22.22 <23"
   },
   "scripts": {
     "build": "nest build",
@@ -33,7 +33,7 @@
     "@testcontainers/postgresql": "^12.2.0",
     "@types/eslint": "^8.56.12",
     "@types/jest": "^30.0.0",
-    "@types/node": "^20.17.10",
+    "@types/node": "^22.20.5",
     "@typescript-eslint/parser": "^7.18.0",
     "eslint": "^8.57.1",
     "jest": "^30.5.2",
