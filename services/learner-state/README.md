@@ -16,8 +16,8 @@ issues (see Jira project SCRUM, label `learner-state`).
 
 ## Prerequisites
 
-- Node.js **20.11+** (the `engines` field in `package.json` enforces the
-  supported range; tested on Node 20.x and 22.x).
+- Node.js **22.22+** (the `engines` field in `package.json` enforces the
+  supported range). Testcontainers 12 requires it; Node 20 is end-of-life.
 - npm 10+.
 - **Docker** running, for the integration tests (Testcontainers starts a
   throwaway Postgres 16). No local Postgres install is needed.
