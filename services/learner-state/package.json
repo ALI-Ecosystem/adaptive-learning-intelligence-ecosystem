@@ -1,0 +1,30 @@
+{
+  "name": "@ali/learner-state",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Learner State service — Bayesian mastery projection over an append-only evidence log.",
+  "license": "UNLICENSED",
+  "engines": {
+    "node": ">=20.11 <23"
+  },
+  "scripts": {
+    "build": "nest build",
+    "start": "node dist/infra/main.js",
+    "start:dev": "nest start --watch",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@nestjs/common": "^10.4.15",
+    "@nestjs/core": "^10.4.15",
+    "@nestjs/platform-express": "^10.4.15",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.1"
+  },
+  "devDependencies": {
+    "@nestjs/cli": "^10.4.9",
+    "@nestjs/schematics": "^10.2.3",
+    "@types/node": "^20.17.10",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.6.3"
+  }
+}
