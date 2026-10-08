@@ -53,8 +53,9 @@ curl -s http://localhost:3000/health
 | `npm start` | run the compiled `dist/infra/main.js` |
 | `npm run start:dev` | Nest watch mode |
 | `npm run typecheck` | `tsc --noEmit` under paranoid-strict TypeScript |
-| `npm run lint` | ESLint — enforces the architectural rule required by SCRUM-31: files under `src/core/` must not import from `src/infra/` |
+| `npm run lint` | ESLint guard rails: `src/core/` must not import from `src/infra/`; Prisma rules of App. C.2 (no `*Unsafe`, no array-form or timeout-less `$transaction`, raw SQL only on `tx`, no generated query API outside `src/infra/admin/`) |
 | `npm run lint:fix` | same, with autofix where applicable |
+| `npm test` | unit tests (no Docker), incl. proof that each guard-rail lint rule fires |
 | `npm run test:integration` | Testcontainers Postgres: creates the roles, runs `prisma migrate deploy` as `ls_owner`, checks both runtime clients and `NUMERIC` → `Prisma.Decimal` |
 | `npm run prisma:generate` | regenerate the Prisma client (also runs on `npm install`) |
 
@@ -70,7 +71,22 @@ owner, so row-level security always applies.
 | `ls_ingest` | ingest client | `LS_INGEST_DATABASE_URL` |
 
 The roles are created once per database by an administrator with
-`prisma/bootstrap/roles.sql` (passwords passed as psql variables). That is
+`prisma/bootstrap/roles.
+
+## Transactions
+
+Every RLS-scoped read and every evidence write goes through
+`src/infra/prisma/transactions.ts`:
+
+- `withLearnerRead(ctx, learnerId, fn)`: first statement
+  `set_config('app.learner_id', …, true)`; 5 s timeout.
+- `withEventWrite(ctx, { evidenceEventId, learnerId }, fn)`: claims the
+  event in `processed_event` (`outcome_digest = 'PENDING'`, decision #24),
+  then `pg_advisory_xact_lock`; returns `DUPLICATE` without running `fn`
+  for an already-processed event; 30 s timeout. `fn` must set the real
+  `outcome_digest`.
+
+Timed-out transactions are counted through `TransactionMetrics`.sql` (passwords passed as psql variables). That is
 not a Prisma migration: migrations run as `ls_owner`, which cannot create
 roles.
 

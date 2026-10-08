@@ -35,6 +35,7 @@
 > 21. **Exposure layer added** (§3.10, R9) — proposed in team review. The module now records *what the learner was taught or shown* separately from *what the system believes they know*. The two are different facts calling for different interventions: "never taught" → teach; "taught, not acquired" → teach differently. Before v0.5 both read as the same low mastery. Exposure is a second **data layer over the same shared ontology**, not a second graph, and it **never** moves `α`/`β`. New `ExposureEvent` input (§6.1a), new tables `exposure_event` (log) and `learner_concept_exposure` (snapshot), new `exposure` field on `ConceptStateView`; RLS and erasure extended to both tables; request **LS-CR-002** to the Evidence Module.
 > 22. **"Personal Knowledge Graph" defined as a logical overlay** (§5.1). The ontology is stored once; per learner, only numbers keyed by `concept_id` are stored. Learner input never changes ontology *structure* — only the Domain Knowledge module creates nodes or edges.
 > 23. **Prisma adopted as the access layer** (Appendix C.2) to match the team standard, replacing Kysely/Slonik. Prisma's generated API is **not** used on the write path or for RLS-scoped reads: those statements are raw SQL on the `tx` handle of one interactive `$transaction`, so the idempotency claim, advisory lock and `set_config(…, true)` share one connection and one transaction. Migrations are Prisma Migrate files with hand-written SQL. Two runtime clients with different connection strings (`ls_api`, `ls_ingest`); migrations run as `ls_owner`.
+> 24. **`outcome_digest` written in two steps** (§6.2, found while building SCRUM-34). The claim runs before the update (§6.3 step 2), but the digest is computed after it (P3 step 6), so the claim cannot supply it. The claim inserts the sentinel `'PENDING'`; the persist step overwrites it with the real digest **in the same transaction**, so `'PENDING'` is never visible after commit. The DDL is unchanged.
 >
 > **Technology stack of record:** see **Appendix C**.
 
@@ -935,8 +936,9 @@ Message delivery — whether Kafka or an in-process bus with retries — is at-l
 ```sql
 BEGIN;
   -- 1. Claim the event. Duplicate → 0 rows → abort, ack, done.
+  --    outcome_digest is not known yet: 'PENDING' until step 3 (v0.5, #24).
   INSERT INTO processed_event (evidence_event_id, learner_id, outcome_digest)
-  VALUES ($1, $2, $3)
+  VALUES ($1, $2, 'PENDING')
   ON CONFLICT (evidence_event_id) DO NOTHING
   RETURNING evidence_event_id;
 
@@ -945,6 +947,8 @@ BEGIN;
   SELECT pg_advisory_xact_lock(hashtextextended($2::text, 0));
 
   -- 3. ... read state, apply §3.4, write transitions, upsert snapshot ...
+  --    then, still in this transaction:
+  UPDATE processed_event SET outcome_digest = $3 WHERE evidence_event_id = $1;
 COMMIT;
 ```
 

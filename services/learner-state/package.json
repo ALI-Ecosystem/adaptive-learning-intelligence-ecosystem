@@ -16,6 +16,7 @@
     "lint:fix": "eslint \"src/**/*.ts\" --fix",
     "postinstall": "prisma generate",
     "prisma:generate": "prisma generate",
+    "test": "jest",
     "test:integration": "jest --config jest.integration.config.js --runInBand"
   },
   "dependencies": {
@@ -30,6 +31,7 @@
     "@nestjs/cli": "^10.4.9",
     "@nestjs/schematics": "^10.2.3",
     "@testcontainers/postgresql": "^12.2.0",
+    "@types/eslint": "^8.56.12",
     "@types/jest": "^30.0.0",
     "@types/node": "^20.17.10",
     "@typescript-eslint/parser": "^7.18.0",
