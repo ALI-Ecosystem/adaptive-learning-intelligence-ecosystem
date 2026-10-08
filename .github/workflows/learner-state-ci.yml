@@ -41,11 +41,18 @@ jobs:
       - name: TypeScript strict typecheck
         run: npm run typecheck
 
-      - name: Lint (core/infra boundary rule)
+      - name: Lint (core/infra boundary + Prisma guard rails)
         run: npm run lint
 
       - name: Nest build
         run: npm run build
+
+      - name: Unit tests
+        run: npm test
+
+      # Testcontainers starts Postgres in the runner's Docker.
+      - name: Integration tests (real Postgres)
+        run: npm run test:integration
 
       - name: Set up Python 3.11 for the numerical oracle
         uses: actions/setup-python@v5
