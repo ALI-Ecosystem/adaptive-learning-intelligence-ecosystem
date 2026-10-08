@@ -11,7 +11,9 @@
     "build": "nest build",
     "start": "node dist/infra/main.js",
     "start:dev": "nest start --watch",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint \"src/**/*.ts\"",
+    "lint:fix": "eslint \"src/**/*.ts\" --fix"
   },
   "dependencies": {
     "@nestjs/common": "^10.4.15",
@@ -24,6 +26,8 @@
     "@nestjs/cli": "^10.4.9",
     "@nestjs/schematics": "^10.2.3",
     "@types/node": "^20.17.10",
+    "@typescript-eslint/parser": "^7.18.0",
+    "eslint": "^8.57.1",
     "ts-node": "^10.9.2",
     "typescript": "^5.6.3"
   }
