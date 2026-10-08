@@ -1,0 +1,17 @@
+// Learner State Prisma schema (architecture App. C.2).
+//
+// `url` is the ls_owner connection, used only by `prisma migrate`.
+// The runtime clients never use it: they pass their own ls_api /
+// ls_ingest URLs to the PrismaClient constructor (src/infra/prisma).
+//
+// Tables are created by hand-written SQL migrations (rule 5). Models are
+// added here only where the generated API is useful (config, admin reads).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("LS_OWNER_DATABASE_URL")
+}

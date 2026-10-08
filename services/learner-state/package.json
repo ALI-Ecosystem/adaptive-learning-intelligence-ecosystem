@@ -11,23 +11,32 @@
     "build": "nest build",
     "start": "node dist/infra/main.js",
     "start:dev": "nest start --watch",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit -p tsconfig.spec.json",
     "lint": "eslint \"src/**/*.ts\"",
-    "lint:fix": "eslint \"src/**/*.ts\" --fix"
+    "lint:fix": "eslint \"src/**/*.ts\" --fix",
+    "postinstall": "prisma generate",
+    "prisma:generate": "prisma generate",
+    "test:integration": "jest --config jest.integration.config.js --runInBand"
   },
   "dependencies": {
     "@nestjs/common": "^10.4.15",
     "@nestjs/core": "^10.4.15",
     "@nestjs/platform-express": "^10.4.15",
+    "@prisma/client": "^6.19.3",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1"
   },
   "devDependencies": {
     "@nestjs/cli": "^10.4.9",
     "@nestjs/schematics": "^10.2.3",
+    "@testcontainers/postgresql": "^12.2.0",
+    "@types/jest": "^30.0.0",
     "@types/node": "^20.17.10",
     "@typescript-eslint/parser": "^7.18.0",
     "eslint": "^8.57.1",
+    "jest": "^30.5.2",
+    "prisma": "^6.19.3",
+    "ts-jest": "^29.4.14",
     "ts-node": "^10.9.2",
     "typescript": "~5.5.4"
   }
