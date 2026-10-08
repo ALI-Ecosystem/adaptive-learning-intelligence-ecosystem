@@ -6,72 +6,23 @@
  * clients connect as non-owner roles and that NUMERIC comes back as
  * Prisma.Decimal.
  */
-import { execFileSync } from 'node:child_process';
-import * as path from 'node:path';
 import { Prisma, PrismaClient } from '@prisma/client';
-import { PostgreSqlContainer, StartedPostgreSqlContainer } from '@testcontainers/postgresql';
 import { assertNonOwnerRole, createPrismaClient } from '../../src/infra/prisma/prisma-clients';
-
-const SERVICE_ROOT = path.resolve(__dirname, '../..');
-const PRISMA_BIN = path.join(SERVICE_ROOT, 'node_modules', '.bin', 'prisma');
-
-// Test-only credentials for a throwaway container.
-const PASSWORDS = {
-  ls_owner: 'owner_pw',
-  ls_api: 'api_pw',
-  ls_ingest: 'ingest_pw',
-} as const;
-
-function urlFor(container: StartedPostgreSqlContainer, role: keyof typeof PASSWORDS): string {
-  const url = new URL(container.getConnectionUri());
-  url.username = role;
-  url.password = PASSWORDS[role];
-  return url.toString();
-}
+import { databaseUrl } from './support/postgres';
 
 describe('Postgres harness', () => {
-  let container: StartedPostgreSqlContainer;
   let owner: PrismaClient;
   let api: PrismaClient;
   let ingest: PrismaClient;
 
   beforeAll(async () => {
-    container = await new PostgreSqlContainer('postgres:16-alpine')
-      .withCopyFilesToContainer([
-        {
-          source: path.join(SERVICE_ROOT, 'prisma', 'bootstrap', 'roles.sql'),
-          target: '/bootstrap/roles.sql',
-        },
-      ])
-      .start();
-
-    const bootstrap = await container.exec([
-      'psql',
-      '-U', container.getUsername(),
-      '-d', container.getDatabase(),
-      '-v', `owner_password=${PASSWORDS.ls_owner}`,
-      '-v', `api_password=${PASSWORDS.ls_api}`,
-      '-v', `ingest_password=${PASSWORDS.ls_ingest}`,
-      '-f', '/bootstrap/roles.sql',
-    ]);
-    if (bootstrap.exitCode !== 0) {
-      throw new Error(`roles.sql failed:\n${bootstrap.output}`);
-    }
-
-    execFileSync(PRISMA_BIN, ['migrate', 'deploy'], {
-      cwd: SERVICE_ROOT,
-      env: { ...process.env, LS_OWNER_DATABASE_URL: urlFor(container, 'ls_owner') },
-      stdio: 'pipe',
-    });
-
-    owner = createPrismaClient(urlFor(container, 'ls_owner'));
-    api = createPrismaClient(urlFor(container, 'ls_api'));
-    ingest = createPrismaClient(urlFor(container, 'ls_ingest'));
+    owner = createPrismaClient(databaseUrl('ls_owner'));
+    api = createPrismaClient(databaseUrl('ls_api'));
+    ingest = createPrismaClient(databaseUrl('ls_ingest'));
   });
 
   afterAll(async () => {
     await Promise.all([owner?.$disconnect(), api?.$disconnect(), ingest?.$disconnect()]);
-    await container?.stop();
   });
 
   it('runs Postgres 14 or newer', async () => {
