@@ -6,9 +6,11 @@ module.exports = {
   rootDir: '.',
   testEnvironment: 'node',
   testMatch: ['<rootDir>/test/integration/**/*.spec.ts'],
+  // One Postgres for the whole run, shared by every suite.
+  globalSetup: '<rootDir>/test/integration/support/global-setup.ts',
+  globalTeardown: '<rootDir>/test/integration/support/global-teardown.ts',
   transform: {
     '^.+\\.ts$': ['ts-jest', { tsconfig: '<rootDir>/tsconfig.spec.json' }],
   },
-  // First run pulls the Postgres image.
-  testTimeout: 180_000,
+  testTimeout: 30_000,
 };

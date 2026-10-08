@@ -90,6 +90,7 @@ Project-level progress log (claude.ai project): `claude/learner-state-review-pro
 | 21 | **Exposure layer** (team proposal): `ExposureEvent`, `exposure_event` + `learner_concept_exposure`, `exposure` on `ConceptStateView`; never moves `α`/`β`; no decay, no propagation; labels unchanged; **LS-CR-002** to Evidence | §3.10, §6.1a, §5.2, §7.2, §11.4 |
 | 22 | "Personal Knowledge Graph" = logical overlay of the shared ontology; ontology stored once; learner input never changes structure | §5.1 |
 | 23 | **Prisma** (team standard) replaces Kysely/Slonik; write path + RLS-scoped reads = raw SQL on `tx` inside one interactive `$transaction`; Prisma Migrate with hand-written SQL; two clients (`ls_api`, `ls_ingest`) | App. C.2 + rules |
+| 24 | `outcome_digest`: the claim inserts `'PENDING'`; the persist step sets the real digest in the same transaction (the digest is only known after the update). DDL unchanged | §6.2 |
 
 Reviewed and **kept unchanged**: the whole of §3 except partial credit, AP-1…AP-5, NUMERIC quantisation, idempotency design, bounded propagation, API rules, caching of undecayed state, evidence-poisoning controls.
 
