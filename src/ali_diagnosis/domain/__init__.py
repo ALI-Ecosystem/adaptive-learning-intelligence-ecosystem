@@ -4,6 +4,7 @@ from .artifacts import (
     DiagnosticArtifact,
     DiagnosticArtifactType,
 )
+from .capabilities import CapabilityMetadata
 from .common import DIAGNOSIS_SCHEMA_VERSION
 from .diagnosis import (
     DiagnosticFinding,
@@ -22,6 +23,7 @@ from .sources import (
 )
 
 __all__ = [
+    "CapabilityMetadata",
     "DIAGNOSIS_SCHEMA_VERSION",
     "DiagnosticArtifact",
     "DiagnosticArtifactType",
