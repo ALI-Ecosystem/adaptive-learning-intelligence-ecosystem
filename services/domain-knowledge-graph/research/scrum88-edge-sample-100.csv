@@ -1,0 +1,101 @@
+n,child,child_desc,child_level,parent,parent_desc,parent_level,similarity,label
+1,Electroantennography,,3,Gas chromatography,type of chromatography to separate complex mixtures,2,0.549,WRONG
+2,Native state,,2,Biochemistry,study of chemical processes in living organisms,1,0.497,OK
+3,Choice set,,2,Statistics,"study of the collection, organization, analysis, interpretation, and presentation of data",1,0.557,OK
+4,Molecular orbital diagram,visual tool in quantum chemistry,5,Linear combination of atomic orbitals,technique in quantum chemistry,4,0.834,OK
+5,Forced labor of Germans in the Soviet Union,,4,Law,,1,0.468,WRONG
+6,Metallicity,fraction of mass of a star or other kind of astronomical object that is not in hydrogen or helium,3,Spectral line,optical phenomenon,2,0.605,WRONG
+7,Mobile commerce,"delivery of electronic commerce capabilities directly into the consumeru2019s hand, anywhere, via wireless technology",2,Marketing,economic activity encouraging purchase or sale of products or services in a market,1,0.618,OK
+8,Nicotine withdrawal,process of withdrawing from nicotine addiction,3,Smoking cessation,process of discontinuing tobacco smoking,2,0.879,OK
+9,Dramaturgy,art of dramatic composition,2,Performance art,artwork created through actions of an artist or other participants,2,0.781,OK
+10,Bézier curve,parametric curve used in computer graphics and related fields,2,Geometry,branch of mathematics regarding geometric figures and properties of space,1,0.801,OK
+11,Fontanelle,human anatomical feature,3,Atrophy,,2,0.623,WRONG
+12,Gender schema theory,,2,Gender studies,interdisciplinary academic field devoted to analysing gender identity and gendered representation,1,0.823,OK
+13,Hyperbaric oxygen,medical treatments at raised ambient pressure,2,Oxygen,chemical element with symbol O and atomic number 8,2,0.598,DOUBT
+14,Soy bean,species of plant,2,Horticulture,"culture of plants, mainly for food, materials, comfort and beauty",1,0.692,DOUBT
+15,Direct response,type of marketing sending messages directly to consumers,3,Public relations,broad term for the management of public communication of organizations,1,0.755,OK
+16,Plane symmetry,,2,Structural engineering,sub-discipline of civil engineering dealing with the creation of man made structures,1,0.569,WRONG
+17,Hydrilla,genus of aquatic plant,4,Aquatic plant,plant that has adapted to living in an aquatic environment,3,0.796,OK
+18,Fatty acid metabolism,"The chemical reactions and pathways involving fatty acids, aliphatic monocarboxylic acids liberated from naturally occurring fats and oils by hydrolysis.",3,Fatty acid,"carboxylic acid with a long aliphatic chain, either saturated or unsaturated",2,0.796,OK
+19,Presupposition,assumed context surrounding an utterance,2,Linguistics,study of human language,1,0.768,OK
+20,Carbon neutrality,having net zero carbon emissions,3,Renewable energy,energy that is collected from renewable resources,2,0.779,OK
+21,Bulletin board,"a board, usually cork, for pinning notices to",2,Multimedia,content that uses a combination of different content forms,1,0.55,WRONG
+22,Excise,tax that taxes the consumption of certain goods,2,Macroeconomics,branch of economics that studies aggregated indicators,1,0.704,DOUBT
+23,Thoracoscope,"medical procedure involving internal examination, biopsy, and/or resection of disease or masses within the pleural cavity and thoracic cavity",2,Radiology,specialty that uses medical imaging to diagnose and treat diseases seen within the body,1,0.723,WRONG
+24,Oligodontia,human disease,2,Gene,basic physical and functional unit of heredity,2,0.617,DOUBT
+25,Chloroplatinic acid,chemical compound,4,Platinum,chemical element with symbol Pt and atomic number 78,3,0.626,OK
+26,Zoophily,,5,Nectar,sugar-rich liquid produced by many flowering plants,3,0.569,DOUBT
+27,Donnan potential,,4,Membrane,"thin, film-like structure that separates two fluids, acting either as a selective barrier or a separating structure",2,0.449,OK
+28,Event reconstruction,,3,Detector,device or circuit that extracts information from a modulated radio frequency current or voltage,2,0.612,OK
+29,Overdrive voltage,,5,Voltage optimisation,,4,0.737,WRONG
+30,Source counts,,4,Redshift,relative increase in wavelength of electromagnetic radiation in the emission spectrum of astronomical objects,3,0.552,DOUBT
+31,Stackelberg competition,economic model,2,Mathematical economics,application of maths in economy,1,0.739,OK
+32,Plasma cell leukemia,Human disease,3,Bone marrow,cells and soft materials in the hollow space of long bones,2,0.615,OK
+33,Weibel instability,,3,Plasma instability,measure of how likely a perturbation in a plasma is to be damped out,3,0.713,OK
+34,Liquid water content,,3,Precipitation,product of the condensation of atmospheric water vapour that falls under gravity,2,0.685,OK
+35,Armillaria,genus of fungi,2,Ecology,scientific study of the relationships between living organisms,1,0.589,OK
+36,Isobaric process,thermodynamic process in which pressure remains constant,2,Chromatography,set of laboratory techniques for the separation of mixtures,1,0.659,WRONG
+37,Theory of planned behavior,"in psychology, a theory that links one's beliefs and behavior",3,Applied psychology,application of psychological theories or findings,1,0.853,OK
+38,Dorsolateral,standard terms for unambiguous description of relative placement of body parts,4,Dorsum,Wikimedia disambiguation page,2,0.69,OK
+39,Homojunction,"semiconductor interface that occurs between layers of similar semiconductor material, these materials have equal band gaps but typically have different doping",3,Doping,intentional introduction of impurities into an intrinsic semiconductor for the purpose of modulating its electrical properties,2,0.683,OK
+40,Balanced histogram thresholding,type of image thresholding,5,Image histogram,digital image analysis method,5,0.873,OK
+41,Affordable housing,housing affordable to those with a median household income,2,Economic growth,Increase in production and consumption in an economy,1,0.683,WRONG
+42,Transposon mutagenesis,biological process that allows genes to be transferred to a host organism's chromosome,5,Transposable element,semiparasitic DNA sequence,4,0.835,OK
+43,Tetramer,oligomer formed from four monomers or subunits. The associated propriety is called tetramery,3,Stereochemistry,subdiscipline of chemistry about stereoisomers and the relative spatial arrangement of atoms,1,0.62,WRONG
+44,Immunolabeling,procedure for detection and localization of an antigen,3,Immunohistochemistry,common application of immunostaining,2,0.8,OK
+45,Deductible,amount of expenses that must be paid out of pocket before an insurer will pay any expenses,2,Actuarial science,discipline that applies mathematical and statistical methods to assess risk in the insurance and finance industries,1,0.612,OK
+46,Medical statistics,,2,Pathology,study and diagnosis of disease,1,0.705,WRONG
+47,Upper gastrointestinal bleeding,medical condition,3,Endoscopy,used in medicine to examine the interior of a hollow organ or cavity of the body,2,0.655,DOUBT
+48,Personal selling,when a sales representative meets with a potential client for the purpose of transacting a sale,4,Marketing,economic activity encouraging purchase or sale of products or services in a market,1,0.707,OK
+49,Network interface,"software or hardware interface between two pieces of equipment, or between protocol layers in a computer network",3,Computer hardware,physical components of a computer,1,0.681,OK
+50,Frontal eye fields,Region of the frontal cortex of the brain,4,Saccade,"short, quick, simultaneous movement of both eyes between two or more phases of fixation in the same direction; random eye movement",3,0.708,OK
+51,Hodge conjecture,Millenium Prize problem in mathematics,4,Hodge theory,theory that represents de Rham cohomology classes on compact Riemannian manifolds by harmonic forms,3,0.774,OK
+52,Mucormycosis,fungal infection by the order Mucorales,2,Diabetes mellitus,group of metabolic disorders characterized by high blood sugar levels over a prolonged period,2,0.604,WRONG
+53,Temperature coefficient,differential equation parameter in thermal physics,2,Electrical engineering,field of engineering that deals with electricity,1,0.631,OK
+54,Finite element method,numerical method for solving physical or engineering problems,2,Composite material,material made from a combination of two or more unlike substances,1,0.65,WRONG
+55,Phase center,,3,Optics,branch of physics concerning light,1,0.603,DOUBT
+56,Near space,layer of the atmosphere,2,Aerospace engineering,branch of engineering,1,0.626,OK
+57,Preharvest,,3,Postharvest,stage of crop production immediately following harvest,2,0.695,WRONG
+58,Earth remote sensing,"acquisition of information about an object or phenomenon without making physical contact with the object, especially the Earth",3,Satellite,human-made object put into an orbit,2,0.68,OK
+59,Ionosphere,atmospheric layer of Earth,2,Meteorology,interdisciplinary scientific study of the atmosphere,1,0.821,OK
+60,Pulmonary surfactant,,2,Chemical engineering,"branch of science that applies physical sciences and life sciences together with applied mathematics and economics to produce, transform, transport, and properly use chemicals, materials and energy",1,0.521,WRONG
+61,Mutual information,measure of dependence between two variables,2,Machine learning,scientific study of algorithms and statistical models that computer systems use to perform tasks without explicit instructions,1,0.759,DOUBT
+62,Islamic education,Wikimedia disambiguation page,3,Islam,,2,0.745,OK
+63,Thermal fluids,branch of science and engineering,4,Convective heat transfer,Heat transfer due to combined effects of advection and diffusion,3,0.807,WRONG
+64,Multiculturalism,political ideology,2,Social science,academic discipline concerned with society and the relationships,1,0.7,OK
+65,Deriving the Schwarzschild solution,,5,Schwarzschild metric,General Relativity Theory,3,0.867,OK
+66,Antifreeze,coolant additive which reduces the freezing point of water,2,Thermodynamics,"branch of physics concerned with heat, work, temperature, and thermal or internal energy",1,0.644,DOUBT
+67,Sudden death,Wikimedia disambiguation page,2,Diabetes mellitus,group of metabolic disorders characterized by high blood sugar levels over a prolonged period,2,0.661,WRONG
+68,Amniotic sac,sac in which the fetus develops in amniotes,5,Atrophy,,2,0.564,WRONG
+69,Graph product,,5,Line graph,Concept in Graph Theory,3,0.805,WRONG
+70,Metal foam,,3,Porosity,ratio of void volume and total volume of a porous material,2,0.656,OK
+71,Reed–Sternberg cell,,4,Cyclotron,type of particle accelerator,3,0.592,WRONG
+72,Network society,"related to the social, political, economic and cultural changes caused by the spread of networked, digital information and communications technologies",2,Media studies,"discipline and field of study that deals with the content, history and effects of various media",1,0.761,OK
+73,Nested loop join,,2,Parallel computing,programming paradigm in which many calculations or the execution of processes are carried out simultaneously,1,0.555,WRONG
+74,Gray level,"image where each pixel's intensity is shown only achromatic values of black, grey, and white",3,Pixel,physical point in a raster image,2,0.703,OK
+75,Noise immunity,an unwanted sound,3,Electronic engineering,"electrical engineering discipline which utilizes nonlinear and active electrical components to design electronic circuits, devices, and their systems",1,0.605,OK
+76,Photometer,scientific instrument,2,Optics,branch of physics concerning light,1,0.745,OK
+77,Mariculture,cultivation of marine organisms in the open ocean,4,Aquaculture,farming things in water,3,0.889,OK
+78,Cloud base,meteorological concept,3,Precipitation,product of the condensation of atmospheric water vapour that falls under gravity,2,0.733,OK
+79,Microphthalmia,eye disease where one or both eyeballs are abnormally small,3,Diabetes mellitus,group of metabolic disorders characterized by high blood sugar levels over a prolonged period,2,0.61,WRONG
+80,Irradiation,exposure to ionizing radiation,2,Quantum mechanics,fundamental theory in physics describing the properties of nature on an atomic scale,1,0.626,WRONG
+81,Standard uncertainty,"situation which involves imperfect and/or unknown information, regarding the existing state, environment, a future outcome or more than one possible outcomes",3,Measurement uncertainty,standard,2,0.74,OK
+82,Glacier,large persistent body of ice,2,Geomorphology,scientific study of landforms and the processes that shape them,1,0.723,OK
+83,Smelting,use of heat and a reducing agent to purify metal from ore,2,Composite material,material made from a combination of two or more unlike substances,1,0.634,WRONG
+84,EEPROM,"nonvolatile memory comprising arrays of floating-gate transistors used in computers, microcontrollers &c. to store relatively small amounts of data but allowing individual bytes to be erased/reprogrammed in-circuit through special programming signals",2,Computer hardware,physical components of a computer,1,0.775,OK
+85,Population ageing,increasing median age in a population,3,Population,"ensemble of individuals of a species in an area, or their number",2,0.662,OK
+86,Finite element limit analysis,,4,Mixed finite element method,,3,0.826,DOUBT
+87,Botulinum toxin,group of eight neurotoxic proteins produced by Clostridium botulinum,2,Diabetes mellitus,group of metabolic disorders characterized by high blood sugar levels over a prolonged period,2,0.597,WRONG
+88,Deci-,prefix denoting 10 to the u22121st power,3,Operating system,software that manages computer hardware resources,1,0.588,WRONG
+89,Launch vehicle,rocket used to carry payload into outer space,2,Aeronautics,"science and art of study, design, manufacturing, and operation of airflight-capable machines",1,0.657,OK
+90,Osteoma,benign tumor of bone,2,Anatomy,study of the structure and parts of organisms,1,0.627,DOUBT
+91,Motile cilium,organelle found on eukaryotic cells,3,Beat (acoustics),term in acoustics,2,0.471,WRONG
+92,SOAP,communications protocol,2,Programming language,language designed to communicate instructions to a machine,1,0.717,DOUBT
+93,Quantum measurement,interaction of a quantum system with a classical observer,3,Open quantum system,quantum mechanical system that interacts with a quantum-mechanical environment,3,0.856,OK
+94,Ka band,portion of the microwave part of the electromagnetic spectrum (26.5u201340 gigahertz),2,Optics,branch of physics concerning light,1,0.733,WRONG
+95,Confidence region,,3,Confidence interval,type of interval estimate (of a population parameter) that is computed from observed data,2,0.677,OK
+96,Negative index metamaterials,metamaterials whose refractive index for an electromagnetic wave has a negative value over some frequency range,3,Metamaterial,materials engineered to have properties that have not yet been found in nature,2,0.811,OK
+97,Full text search,techniques for searching a single computer-stored document or a collection in a full text database,3,Search engine,application that collects and allows the searching of information on a computer system,2,0.886,OK
+98,Analytical psychology,jungian theories,2,Psychotherapist,clinically applied psychology for desired behavior change,1,0.748,DOUBT
+99,Production function,physical output of a production process to physical inputs or factors of production,3,Economy,"area of the production, distribution and trade, as well as consumption of goods and services by different agents",1,0.704,OK
+100,Library automation,software that organizes and provides access to a library collection,2,Library science,"the application of practices, methods, technologies, tools of management, education, training, perspectives, and related areas, to the organized collection and the systematic classification of information in libraries",1,0.807,OK
