@@ -9,6 +9,7 @@ description = "Diagnosis domain contracts for the Adaptive Learning Intelligence
 requires-python = ">=3.11"
 dependencies = [
     "pydantic>=2.12,<3",
+    "langgraph>=1,<2",
 ]
 
 [project.optional-dependencies]
