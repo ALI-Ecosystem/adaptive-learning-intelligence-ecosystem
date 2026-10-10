@@ -15,7 +15,7 @@ Agreed foundations
 1. The contracts are provisional/evolving domain contracts, not the final ALI schema.
 2. The existing Big Data model and the final presentation are our strongest current baseline.
 3. We will reuse stable concepts from that model, but we will not copy Iceberg/Silver/Gold tables 1:1 into the Diagnosis domain.
-4. Diagnosis contracts must remain independent from OpenAI Agents SDK and other runtime-specific types.
+4. Diagnosis contracts must remain independent from LangGraph or any other agent/orchestration runtime-specific types.
 5. The contracts should make future schema evolution explicit rather than pretending the surrounding ALI system is already complete.
 6. Decisions will be made one by one: proposal → explanation → review → explicit approval → document update.
 
@@ -131,7 +131,7 @@ Decision
 A diagnosis may use three broad source families:
 - Evidence — persisted learner observations/events.
 - Context / Information — information retrieved from ALI sources such as Learner State, Domain Knowledge Graph, task/material context, history, previous diagnoses, goals, or profile.
-- Capability Results — structured measurements produced by specialized diagnostic capabilities such as Knowledge Tracing or Behavioral / Process Analytics.
+- Capability Results — structured measurements produced by specialized Diagnosis-owned capabilities such as Knowledge / Response Tracing.
 
 
 The final diagnosis must be able to reference the specific sources that supported or contradicted its findings and hypotheses.
@@ -322,7 +322,7 @@ Adaptive Learning Engine
 
 
 Runtime independence
-Diagnosis domain contracts must remain independent from the OpenAI Agents SDK or any other agent runtime.
+Diagnosis domain contracts must remain independent from LangGraph or any other agent/orchestration runtime.
 
 
 Decision 13 — ACCEPTED — Validation and Unit-Test Invariants
@@ -369,7 +369,7 @@ The core contract design decisions are accepted. Implementation, compilation, do
 Implementation Decision — ACCEPTED — Python Contract Layer
 
 
-The SCRUM-6 Diagnosis domain contracts are implemented in Python using Pydantic v2. This keeps the contract layer aligned with the planned Diagnosis/ML ecosystem while remaining independent from the OpenAI Agents SDK. The application/backend may still use another language as long as it exchanges the agreed runtime-independent contract payloads.
+The SCRUM-6 Diagnosis domain contracts are implemented in Python using Pydantic v2. This keeps the contract layer aligned with the planned Diagnosis/ML ecosystem while remaining independent from LangGraph and other orchestration/runtime frameworks. The application/backend may still use another language as long as it exchanges the agreed runtime-independent contract payloads.
 
 
 Design rule
@@ -380,3 +380,13 @@ Source basis
 Adaptive Learning Intelligence — final presentation v3
 Existing ALI Big Data implementation
 Diagnosis Engine — Full Detailed Architecture
+
+Post-SCRUM-6 Architecture Update — 2026-10-10
+
+LangGraph is the approved orchestration runtime for the Diagnosis Orchestrator, but it remains behind a replaceable runtime boundary and does not change the v0 Diagnosis domain contracts.
+
+The active diagnostic run may keep temporary in-memory graph state containing the current case representation: request and subject identity, current WHAT findings, current WHY hypotheses, retrieved information, capability results, supporting/contradicting source references, current synthesis, latest validation result, and minimal runtime-control fields. This temporary state is not a persisted domain contract and must not contain hidden chain-of-thought or a chronological history of model reasoning attempts.
+
+A model invocation only knows earlier-stage information that is explicitly supplied through the graph state or its local agent-loop context. The graph state therefore acts as shared runtime memory between revisitable WHAT, WHY, Synthesis, and Quality Validation stages.
+
+Behavioral/process signals remain valid evidence, but raw event normalization and behavioral metric computation are now treated as upstream evidence/analytics responsibilities rather than a Diagnosis-owned capability. The current Diagnosis-owned specialized capability family is Knowledge / Response Tracing.
