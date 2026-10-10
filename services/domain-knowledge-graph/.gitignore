@@ -1,0 +1,6 @@
+neo4j.env
+raw/
+import/
+demo-output.txt
+.venv/
+__pycache__/
