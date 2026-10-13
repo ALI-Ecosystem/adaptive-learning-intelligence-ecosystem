@@ -1,2 +1,5 @@
 model2vec>=0.4
 numpy>=1.26
+neo4j>=5.20
+anthropic>=0.40
+pytest>=8
