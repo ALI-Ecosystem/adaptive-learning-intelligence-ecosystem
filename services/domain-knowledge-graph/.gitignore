@@ -4,3 +4,5 @@ import/
 demo-output.txt
 .venv/
 __pycache__/
+runs/
+.pytest_cache/
