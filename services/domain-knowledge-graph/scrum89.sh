@@ -3,10 +3,13 @@
 #   ./scrum89.sh setup        install deps, build the vector index, run smoke tests (free)
 #   ./scrum89.sh demo         place Tail recursion from a Hebrew conversation, dry run (~1 cent)
 #   ./scrum89.sh add          same, and write it to the graph as a proposal
+#   ./scrum89.sh proposals    list proposed concepts in the graph
+#   ./scrum89.sh hebrew       hide-and-replace on 10 Hebrew student messages (cents)
 #   ./scrum89.sh eval-quick   hide-and-replace on 8 concepts, all methods (a few cents)
 #   ./scrum89.sh eval         hide-and-replace on 200 concepts, all methods (a few dollars)
 #   ./scrum89.sh baseline     hide-and-replace on 200 concepts, baseline only (free)
 #   ./scrum89.sh judge RUN LLMRUN   blind Opus judge over an eval run (a few dollars)
+#   ./scrum89.sh judge-edges  second judge for the SCRUM-88 100-link sample (cents)
 set -e
 HERE="$(cd "$(dirname "$0")" && pwd)"
 cd "$HERE"
@@ -30,9 +33,12 @@ case "$1" in
     ;;
   demo)  need_neo4j; "$PY" -m placement.place --dry-run --text "$DEMO_TEXT" ;;
   add)   need_neo4j; "$PY" -m placement.place --text "$DEMO_TEXT" ;;
+  proposals) need_neo4j; "$PY" -m placement.proposals ;;
+  hebrew)    need_neo4j; "$PY" -m placement.hebrew_eval ;;
   eval-quick) need_neo4j; "$PY" -m placement.evaluate --n-per-level 2 --methods baseline,agent,llm_only ;;
   eval)       need_neo4j; "$PY" -m placement.evaluate --methods baseline,agent,llm_only ;;
   baseline)   need_neo4j; "$PY" -m placement.evaluate --methods baseline ;;
+  judge-edges) "$PY" -m placement.judge_edges ;;
   judge)      need_neo4j; "$PY" -m placement.judge --run "$2" --llm-only-run "$3" ;;
-  *) sed -n 2,9p "$0"; exit 1 ;;
+  *) sed -n 2,12p "$0"; exit 1 ;;
 esac
