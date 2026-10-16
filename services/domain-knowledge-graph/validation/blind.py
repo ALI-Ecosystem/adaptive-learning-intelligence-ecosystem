@@ -22,7 +22,7 @@ import re
 
 from placement.embedder import concept_text
 
-from .contract import Check, Proposal, Result
+from .contract import UNTRUSTED_NOTE, Check, Proposal, Result, prompt_text
 
 LAYER = "independent"
 MODEL = os.environ.get("ALI_VALIDATOR_MODEL", "claude-opus-5-5")
@@ -33,8 +33,11 @@ PROMPT = """You are checking where a new concept belongs in a knowledge graph of
 concepts. A concept goes under a parent: the broader concept of which it is a kind, a part \
 or a sub-topic. The best parent is the most specific one that still contains the concept.
 
-New concept: {name}{original}
+<new_concept>
+Name: {name}{original}
 Definition: {description}
+</new_concept>
+{untrusted_note}
 
 Candidate parents (each with its path up to a top-level field):
 {options}
@@ -78,8 +81,8 @@ def build_options(p: Proposal, graph, sem_signals: dict, view):
 def _describe(graph, cid):
     c = graph.concept(cid)
     path = " > ".join(x["name"] for x in reversed(graph.path_to_root(cid)))
-    desc = (c.get("description") or "")[:140]
-    return f"{c['name']} — {desc} (path: {path})"
+    desc = prompt_text(c.get("description"), 140)           # may be an accepted proposal
+    return f"{prompt_text(c['name'], 200)} — {desc} (path: {prompt_text(path, 400)})"
 
 
 def ask(client, p: Proposal, graph, roles: dict, nearest: list[dict]):
@@ -89,8 +92,10 @@ def ask(client, p: Proposal, graph, roles: dict, nearest: list[dict]):
     opts = {keys[i]: cid for i, cid in enumerate(ids)}
     none_key = keys[len(ids)]
     prompt = PROMPT.format(
-        name=p.name, original=f" (learner's words: {p.name_original})" if p.name_original else "",
-        description=p.description or "(none given)",
+        name=prompt_text(p.name, 200),
+        original=f" (learner's words: {prompt_text(p.name_original, 200)})" if p.name_original else "",
+        description=prompt_text(p.description, 1000) or "(none given)",
+        untrusted_note=UNTRUSTED_NOTE,
         options="\n".join(f"{k}. {_describe(graph, cid)}" for k, cid in opts.items()),
         none_key=none_key,
         nearest="\n".join(f"- id {n['id']}: {_describe(graph, n['id'])}" for n in nearest) or "(none)")
