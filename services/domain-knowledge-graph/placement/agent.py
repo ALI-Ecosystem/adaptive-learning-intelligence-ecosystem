@@ -23,7 +23,13 @@ would appear in an encyclopedia (the conversation may be in Hebrew or English).
 2. Check whether that concept already exists in the graph (same meaning, possibly another name).
 3. If it does not exist, find its most direct parent: the most specific existing concept of \
 which it is a narrower kind or sub-topic. Prefer the deepest correct parent, not a broad field.
-4. Call submit_placement exactly once.
+4. If it does not exist, also name its direct prerequisites: up to 3 existing concepts a \
+learner must understand BEFORE this one (prerequisite_ids), and up to 2 existing concepts \
+for which this one is a direct prerequisite (enables_ids). Only essential, direct ones that \
+you found in the graph; an empty list is better than a guess. A prerequisite is about \
+learning order, not about being related; the parent may be a prerequisite, but the new \
+concept can never be a prerequisite of its own parent or ancestors.
+5. Call submit_placement exactly once.
 
 How to work:
 - The graph is too large to see at once. Explore it with the tools, step by step.
@@ -78,7 +84,13 @@ TOOLS = [
                        "description": "Why this parent (or existing match): 2-5 sentences, "
                                       "citing what you saw in the graph"},
          "alternatives": {"type": "array", "items": {"type": "string"},
-                          "description": "Other parent ids you considered, best first"}},
+                          "description": "Other parent ids you considered, best first"},
+         "prerequisite_ids": {"type": "array", "items": {"type": "string"}, "maxItems": 3,
+                              "description": "If new: ids of existing concepts to learn BEFORE it"},
+         "enables_ids": {"type": "array", "items": {"type": "string"}, "maxItems": 2,
+                         "description": "If new: ids of existing concepts it is a prerequisite of"},
+         "prerequisite_reasoning": {"type": "string",
+                                    "description": "One sentence per prerequisite link"}},
          "required": ["concept_name", "description", "decision", "confidence", "reasoning"]}},
 ]
 
@@ -123,6 +135,13 @@ def _check_decision(graph: Graph, d: dict) -> str | None:
         return "parent_id must be the id of an existing concept"
     if not d.get("concept_name", "").strip():
         return "concept_name is required"
+    for key, most in (("prerequisite_ids", 3), ("enables_ids", 2)):
+        ids = d.get(key) or []
+        if not isinstance(ids, list) or len(ids) > most:
+            return f"{key} must be a list of at most {most} ids"
+        bad = [i for i in ids if not graph.concept_exists(str(i))]
+        if bad:
+            return f"{key} has ids that are not concepts: {bad}"
     return None
 
 
