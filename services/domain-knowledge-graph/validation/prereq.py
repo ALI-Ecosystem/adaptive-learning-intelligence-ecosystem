@@ -35,7 +35,7 @@ import random
 from placement.embedder import concept_text
 
 from . import refd as refd_mod
-from .contract import Decision, Proposal
+from .contract import UNTRUSTED_NOTE, Decision, Proposal, prompt_text
 from .structural import MAX_PREREQ_EDGES
 
 MODEL = os.environ.get("ALI_VALIDATOR_MODEL", "claude-opus-5-5")
@@ -55,15 +55,18 @@ EDGE_RULES = {
 
 PROMPT = """You are checking LEARNING ORDER in a knowledge graph of academic concepts.
 
-Concept: {name}
+<new_concept>
+Name: {name}
 Definition: {description}
+</new_concept>
+{untrusted_note}
 
 Candidate concepts:
 {options}
 
 For each candidate decide:
-- "before": a learner must understand it BEFORE learning {name} (a direct prerequisite);
-- "after": {name} is a direct prerequisite of it (learn {name} first);
+- "before": a learner must understand it BEFORE learning the new concept (a direct prerequisite);
+- "after": the new concept is a direct prerequisite of it (learn the new concept first);
 - otherwise leave it out (related, or the same level, or no clear order).
 Only direct, essential order counts - not mere relatedness. Empty lists are fine.
 
@@ -105,9 +108,11 @@ def ask_order(client, p: Proposal, graph, proposed: list[str], decoys: list[str]
 
     def describe(cid):
         c = graph.concept(cid) or {"name": cid, "description": ""}
-        return f"{c['name']} — {(c.get('description') or '')[:140]}"
+        return f"{prompt_text(c['name'], 200)} — {prompt_text(c.get('description'), 140)}"
 
-    prompt = PROMPT.format(name=p.name, description=p.description or "(none given)",
+    prompt = PROMPT.format(name=prompt_text(p.name, 200),
+                           description=prompt_text(p.description, 1000) or "(none given)",
+                           untrusted_note=UNTRUSTED_NOTE,
                            options="\n".join(f"{k}. {describe(c)}" for k, c in opts.items()))
     tool = {"name": "submit_order", "description": "Submit the learning order.",
             "input_schema": {"type": "object", "properties": {
