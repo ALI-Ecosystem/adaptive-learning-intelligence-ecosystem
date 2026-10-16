@@ -1,12 +1,9 @@
 CREATE CONSTRAINT concept_id IF NOT EXISTS FOR (c:Concept) REQUIRE c.id IS UNIQUE;
-CREATE CONSTRAINT concept_uuid IF NOT EXISTS FOR (c:Concept) REQUIRE c.concept_id IS UNIQUE;
-CREATE CONSTRAINT proposed_uuid IF NOT EXISTS FOR (p:ProposedConcept) REQUIRE p.concept_id IS UNIQUE;
-CREATE INDEX concept_wikidata IF NOT EXISTS FOR (c:Concept) ON (c.wikidata);
 CREATE FULLTEXT INDEX concept_text IF NOT EXISTS FOR (c:Concept) ON EACH [c.name, c.description];
 LOAD CSV WITH HEADERS FROM 'file:///concepts.csv' AS r
 CALL { WITH r
   MERGE (c:Concept {id: r.id})
-  SET c.concept_id = r.concept_id, c.name = r.name, c.description = r.description, c.level = toInteger(r.level),
+  SET c.name = r.name, c.description = r.description, c.level = toInteger(r.level),
       c.wikidata = r.wikidata, c.works_count = toInteger(r.works_count),
       c.disambiguation_suspect = (r.disambiguation_suspect = 'True'),
       c.source = 'OpenAlex Concepts snapshot 2026-09-23'

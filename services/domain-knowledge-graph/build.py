@@ -10,8 +10,6 @@ import argparse, collections, csv, gzip, json, os
 import numpy as np
 from model2vec import StaticModel
 
-from placement.ids import concept_uuid
-
 MODEL = "minishlab/potion-base-32M"
 FANIN_FACTOR = 10      # parent flagged if child count > FANIN_FACTOR x p99 of its level
 MAX_PARENTS = 10       # child flagged if it has more parents than this
@@ -99,13 +97,12 @@ def main():
 
     with open(os.path.join(a.out, "concepts.csv"), "w", newline="") as f:
         w = csv.writer(f)
-        w.writerow(["id", "concept_id", "name", "description", "level", "wikidata", "works_count",
+        w.writerow(["id", "name", "description", "level", "wikidata", "works_count",
                     "disambiguation_suspect", "parent_count", "child_count"])
         for i in ids:
             d = c[i]
-            w.writerow([d["id"], concept_uuid(d["id"]), d["name"], d["desc"], d["level"],
-                        d["wikidata"], d["works"], d["desc"] == "Wikimedia disambiguation page",
-                        len(par.get(i, ())), kids.get(i, 0)])
+            w.writerow([d["id"], d["name"], d["desc"], d["level"], d["wikidata"], d["works"],
+                        d["desc"] == "Wikimedia disambiguation page", len(par.get(i, ())), kids.get(i, 0)])
 
     related = write_related(a.raw, a.out, c)
     print(f"concepts={len(c)} child_of={edges} related={related} "

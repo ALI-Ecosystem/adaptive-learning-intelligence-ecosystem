@@ -13,7 +13,6 @@ from neo4j import GraphDatabase
 
 from . import config
 from .embedder import concept_text, embed
-from .ids import new_concept_uuid
 
 _LUCENE_SPECIAL = re.compile(r'([+\-!(){}\[\]^"~*?:\\/]|&&|\|\|)')
 
@@ -155,9 +154,7 @@ class Graph:
     # ---- the only write -------------------------------------------------
     def write_proposal(self, *, name: str, name_original: str, description: str,
                        parent_id: str, confidence: float, reasoning: str,
-                       method: str, model: str, trace_id: str,
-                       requires: list[str] = (), enables: list[str] = (),
-                       prerequisite_reasoning: str = "") -> str:
+                       method: str, model: str, trace_id: str) -> str:
         """Add a concept as PROPOSED, never as a validated :Concept. It is not returned by
         the search indexes until the validation gate (SCRUM-90) promotes it."""
         if not self.concept_exists(parent_id):
@@ -165,28 +162,15 @@ class Graph:
         pid = "P-" + uuid.uuid4().hex[:12]
         self.driver.execute_query(
             """MATCH (par:Concept {id: $parent_id})
-               CREATE (p:ProposedConcept {id: $pid, concept_id: $concept_id,
-                       name: $name, name_original: $name_original,
+               CREATE (p:ProposedConcept {id: $pid, name: $name, name_original: $name_original,
                        description: $description, status: 'proposed', created_at: $now,
                        method: $method, model: $model, trace_id: $trace_id})
                CREATE (p)-[:PROPOSED_CHILD_OF {confidence: $confidence, reasoning: $reasoning,
                        created_at: $now, method: $method, trace_id: $trace_id}]->(par)""",
-            pid=pid, concept_id=new_concept_uuid(), name=name[:200], name_original=name_original[:200],
+            pid=pid, name=name[:200], name_original=name_original[:200],
             description=description[:1000], parent_id=parent_id,
             confidence=float(confidence), reasoning=reasoning[:2000], method=method,
             model=model, trace_id=trace_id, now=datetime.now(timezone.utc).isoformat())
-        # SCRUM-90: prerequisite links, also only PROPOSED until the gate decides each one.
-        # (r)-[:PROPOSED_PREREQUISITE_OF]->(p): r must be learned before the new concept p.
-        for direction, ids in (("requires", requires), ("enables", enables)):
-            for cid in ids:
-                self.driver.execute_query(
-                    ("MATCH (p:ProposedConcept {id: $pid}), (c:Concept {id: $cid}) "
-                     + ("CREATE (c)-[:PROPOSED_PREREQUISITE_OF {reasoning: $why, created_at: $now, "
-                        "trace_id: $trace_id}]->(p)" if direction == "requires" else
-                        "CREATE (p)-[:PROPOSED_PREREQUISITE_OF {reasoning: $why, created_at: $now, "
-                        "trace_id: $trace_id}]->(c)")),
-                    pid=pid, cid=cid, why=prerequisite_reasoning[:1000], trace_id=trace_id,
-                    now=datetime.now(timezone.utc).isoformat())
         return pid
 
 
