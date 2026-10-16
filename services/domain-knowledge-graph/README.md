@@ -99,3 +99,31 @@ misses for a person to judge, and one trace per agent run (every tool call and r
 - Conversations are kept only in local traces under `runs/` (git-ignored); the graph
   stores the decision and reasoning, not the conversation.
 - Neo4j listens on 127.0.0.1 only; secrets live in git-ignored env files.
+
+## SCRUM-90: validation gate for additions
+
+A proposed concept (and each proposed prerequisite link) becomes part of the trusted graph
+only through `validation/`. Nothing existing is changed or deleted (append-only).
+
+```
+proposal -> 1 structural -> 2 semantic -> 3 Wikidata -> 4 blind validator -> 5 decision
+                                                         ACCEPT_PROVISIONAL | NEEDS_REVIEW | REJECT
+```
+
+- Layers run cheapest first and stop as soon as one decides (`validation/gate.py`).
+- Decision rules: `validation/decision.py` (concept), `validation/prereq.py` (each link).
+- Writes: `validation/store.py` - new `Concept {trust:'provisional'}` + `CHILD_OF` + accepted
+  `PREREQUISITE_OF`; every run stored as a `ValidationRun` node; rejected proposals stay
+  with status `rejected`. Trust: provisional -> trusted (teacher/audit) or flagged.
+- Teacher queue and audit: `validation/teacher.py`.
+- Public ids: every concept has `concept_id` (UUID, `placement/ids.py`), the id Learner
+  State stores; `id` stays the internal source key.
+
+Entry point: `./scrum90.sh` (run without arguments for the command list). Unit tests:
+`./scrum90.sh test` (no Neo4j, no API key). Calibration and evaluation scripts write to
+`runs/scrum90-*` (git-ignored); Wikidata and Wikipedia answers are cached in
+`runs/wikidata-cache.json` and `runs/wikipedia-cache.json`.
+
+Results (2026-10-16): on the 170 real SCRUM-89 agent placements, wrong placements in the
+graph fell from 4.1% to 1.3% with 10% of proposals sent to the teacher; on LectureBank
+prerequisite links 2.6% of wrong links were accepted, 7.9% went to the teacher.

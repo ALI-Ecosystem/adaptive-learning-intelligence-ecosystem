@@ -44,6 +44,12 @@ def main():
         print(f"parent:     {path}")
         print(f"confidence: {d['confidence']}")
         print(f"why:        {d['reasoning']}")
+        for label, key in (("requires:  ", "prerequisite_ids"), ("enables:   ", "enables_ids")):
+            for cid in d.get(key) or []:
+                c = graph.concept(cid)
+                print(f"{label} {c['name'] if c else cid} [{cid}]")
+        if d.get("prerequisite_reasoning"):
+            print(f"prereq why: {d['prerequisite_reasoning']}")
         if pending:
             print(f"ALREADY PROPOSED as {pending[0]['id']} under {pending[0]['parent_name']} "
                   f"- nothing added")
@@ -54,7 +60,9 @@ def main():
                 name=d["concept_name"], name_original=d.get("concept_name_original") or "",
                 description=d["description"], parent_id=d["parent_id"],
                 confidence=d["confidence"], reasoning=d["reasoning"],
-                method="agent", model=a.model, trace_id=res.trace_id)
+                method="agent", model=a.model, trace_id=res.trace_id,
+                requires=d.get("prerequisite_ids") or [], enables=d.get("enables_ids") or [],
+                prerequisite_reasoning=d.get("prerequisite_reasoning") or "")
             print(f"ADDED as proposal {pid} (status: proposed)")
     print(f"steps={res.steps} tokens={res.input_tokens}+{res.output_tokens} "
           f"time={res.seconds:.0f}s trace={trace_path}")
