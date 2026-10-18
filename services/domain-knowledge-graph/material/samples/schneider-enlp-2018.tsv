@@ -1,0 +1,26 @@
+file	title	lecturebank_id	lecturebank_topic	url
+01_slides.pdf	Natural Language Processing Introduction	903	Introduction to NLP	http://people.cs.georgetown.edu/nschneid/cosc572/s18/01_slides.pdf
+02a_slides.pdf	Text Corpora	894	Working with Corpora	http://people.cs.georgetown.edu/nschneid/cosc572/s18/02a_slides.pdf
+02b_TextProc.pdf	Basic Text Processing Regular Expressions	897	Regular Expressions	http://people.cs.georgetown.edu/nschneid/cosc572/s18/02b_TextProc.pdf
+03_ling.pdf	What is Linguistics?	883	Language and Linguistics	http://people.cs.georgetown.edu/nschneid/cosc572/s18/03_ling.pdf
+05_LM_slides.pdf	N-gram Language Models	900	Introduction to Language Modeling	http://people.cs.georgetown.edu/nschneid/cosc572/s18/05_LM_slides.pdf
+06_LM2_slides.pdf	Language Models: More smoothing	885	Smoothing and Interpolation	http://people.cs.georgetown.edu/nschneid/cosc572/s18/06_LM2_slides.pdf
+07_NB_classification.pdf	Classication: Nave Bayes	905	Sentiment Analysis	http://people.cs.georgetown.edu/nschneid/cosc572/s18/07_NB_classification.pdf
+08a_lexsem_slides.pdf	Lexical Semantics: Word senses, relations, and classes	884	Introduction to NLP	http://people.cs.georgetown.edu/nschneid/cosc572/s18/08a_lexsem_slides.pdf
+08b_discriminative-features.pdf	Linear Models for Classication: Features & Weights	886	Introduction to Classification	http://people.cs.georgetown.edu/nschneid/cosc572/s18/08b_discriminative-features.pdf
+09_discriminative-learning.pdf	Linear Models for Classication: Discriminative Learning (Perceptron, SVMs, MaxEnt)	892	Introduction to Support Vector Machines and Kernels	http://people.cs.georgetown.edu/nschneid/cosc572/s18/09_discriminative-learning.pdf
+10_pos_slides.pdf	Parts of Speech	887	Introduction to Part of Speech Tagging	http://people.cs.georgetown.edu/nschneid/cosc572/s18/10_pos_slides.pdf
+11_pos_hmm_slides.pdf	Part-of-speech tagging and HMMs	899	Hidden Markov Models	http://people.cs.georgetown.edu/nschneid/cosc572/s18/11_pos_hmm_slides.pdf
+12_viterbi_slides.pdf	Algorithms for HMMs	906	Hidden Markov Models	http://people.cs.georgetown.edu/nschneid/cosc572/s18/12_viterbi_slides.pdf
+13_annotation_slides.pdf	Annotation	902	NLP Tasks	http://people.cs.georgetown.edu/nschneid/cosc572/s18/13_annotation_slides.pdf
+14_discriminative-sequence.pdf	Discriminative Sequence	882	Generative and Discriminative Models 1	http://people.cs.georgetown.edu/nschneid/cosc572/s18/14_discriminative-sequence.pdf
+15_syntax_slides.pdf	English Syntax & CFGs	893	Context-Free Grammars	http://people.cs.georgetown.edu/nschneid/cosc572/s18/15_syntax_slides.pdf
+16_parsing_slides.pdf	Parsing with Context Free Grammars	895	Context-Free Grammars	http://people.cs.georgetown.edu/nschneid/cosc572/s18/16_parsing_slides.pdf
+17_dependency-parsing_slides.pdf	Dependency Parsing	901	Introduction to Dependency Parsing	http://people.cs.georgetown.edu/nschneid/cosc572/s18/17_dependency-parsing_slides.pdf
+18_coref_slides.pdf	Coreference Resolution	890	NLP Resources	http://people.cs.georgetown.edu/nschneid/cosc572/s18/18_coref_slides.pdf
+19_srl_slides.pdf	Semantic Role Labeling	888	NLP Resources	http://people.cs.georgetown.edu/nschneid/cosc572/s18/19_srl_slides.pdf
+20_MT_slides.pdf	Machine Translation	891	Machine Translation Basics	http://people.cs.georgetown.edu/nschneid/cosc572/s18/20_MT_slides.pdf
+21_distributional_slides.pdf	Distributional Semantics	904	Introduction to Semantics and Logic	http://people.cs.georgetown.edu/nschneid/cosc572/s18/21_distributional_slides.pdf
+22_deep_learning.pdf	Deep Learning & Neural Networks	898	Introduction to Neural Networks and Deep Learning	http://people.cs.georgetown.edu/nschneid/cosc572/s18/22_deep_learning.pdf
+23_context.pdf	Context in Language	889	Working with Corpora	http://people.cs.georgetown.edu/nschneid/cosc572/s18/23_context.pdf
+24_wrapup.pdf	Wrapping Up	896	Introduction to NLP	http://people.cs.georgetown.edu/nschneid/cosc572/s18/24_wrapup.pdf

@@ -127,3 +127,51 @@ Entry point: `./scrum90.sh` (run without arguments for the command list). Unit t
 Results (2026-10-16): on the 170 real SCRUM-89 agent placements, wrong placements in the
 graph fell from 4.1% to 1.3% with 10% of proposals sent to the teacher; on LectureBank
 prerequisite links 2.6% of wrong links were accepted, 7.9% went to the teacher.
+
+## SCRUM-91: scoped Course Material Graph
+
+`CREATE MATERIAL GRAPH`: given one course or set of learning material, build a small graph of
+just that material, made of the global graph's own concepts and edges. This component does not
+decide whether ALI should build one; it performs the request.
+
+```
+material -> 1 ingest (units) -> 2 extract (concepts + role + evidence) -> 3 link (canonical concept)
+         -> 4 missing concepts: SCRUM-89 agent -> SCRUM-90 gate -> 5 scope -> 6 store (overlay)
+```
+
+- **Roles.** Every concept is `taught` in a unit or only used there as a `prerequisite`. A concept
+  that is needed but never taught in the material is the course's prior knowledge.
+- **Linking.** Hybrid search gives candidates (with their path to the root); Claude picks the one
+  with the same meaning in the course, or none. Ids not offered are never accepted.
+- **Missing concepts** are not invented locally: they go through the SCRUM-89 placement agent and
+  the SCRUM-90 gate. Accepted -> linked; teacher review -> kept as a pending link; rejected as a
+  duplicate -> linked to the existing concept.
+- **Scope.** From each taught concept, climb the existing `CHILD_OF` edges. At each step the parent
+  must fit the course (checked by Claude in one batched call per level); candidates are the
+  node's existing parents only (already in scope first, then primary). If none fits, the climb
+  stops: no edge is invented and the global graph is not changed. Prerequisite concepts are
+  attached under an in-scope parent but never climbed. Context concepts above the first
+  branching point are trimmed. Other existing edges between kept concepts (`CHILD_OF`,
+  `PREREQUISITE_OF`, `RELATED_TO` between material concepts) are reused as they are.
+- **Storage** (`material/store.py`): `:MaterialGraph`, `:MaterialUnit` and relationships
+  `HAS_UNIT`, `COVERS` (unit -> concept, role, evidence), `INCLUDES` (graph -> concept, role,
+  `scoped_parent` = one of the concept's existing parents) and `INCLUDES_PENDING` (-> a proposal
+  waiting for the teacher). Nothing is copied; nothing global is written. Same material + same
+  settings -> the existing graph is returned; `--new-version` supersedes it.
+- **Public ids.** `export` returns concept UUIDs (`concept_id`), the ids Learner State stores.
+
+### Run it
+
+```bash
+./scrum91.sh setup      # deps, the two sample courses into materials/ (git-ignored), tests
+./scrum91.sh offline    # both courses with no LLM (lexical baseline), free
+./scrum91.sh enlp       # English NLP course, Georgetown COSC-572 (LectureBank), with Claude
+./scrum91.sh hebrew     # Hebrew data-structures course (Hebrew Wikibooks, TAU 0512-2510)
+./scrum91.sh eval runs/scrum91-<run> --judge     # gold-file recall + blind Opus judges
+./scrum91.sh list | show ID | export ID | q ID order | q ID unit N | q ID concept NAME | q ID prior
+```
+
+Gold files (`material/samples/gold-*.tsv`) give 1-3 accepted canonical concepts (or a concept the
+graph lacks, `new:Name`) for the main topic of each unit. They were written from the unit titles
+and contents before any run. Claude answers are cached in `runs/scrum91-llm-cache.json`, so a
+re-run of the same material costs nothing.

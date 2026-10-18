@@ -1,0 +1,36 @@
+unit	gold	note
+אלגוריתמים/Quicksort	C2778937211	Quicksort
+אלגוריתמים/אלגוריתמים למיון בזמן לינארי	new:Counting sort|new:Radix sort|new:Bucket sort	none of the three is in the graph
+אלגוריתמים/החסם התחתון על מיון מבוסס-השוואות	new:Comparison sort|C56289965	Comparison sort (not in the graph) | Decision tree model
+אלגוריתמים/חיפוש לינארי ובינרי	C204259536|C121610932	Linear search | Binary search algorithm
+אלגוריתמים/מיון הכנסה ומיזוג	new:Insertion sort|new:Merge sort	neither is in the graph
+אלגוריתמים/מציאת סיבוכיות פסוודו-קוד	C311688|C64731005	Time complexity | Analysis of algorithms
+אלגוריתמים/נוסחאות נסיגה	C201292218|new:Master theorem	Recurrence relation | Master theorem (not in the graph)
+אלגוריתמים/סדרי גדילה	C119047807|new:Big O notation	Asymptotic analysis | Big O notation (not in the graph)
+אלגוריתמים/תכנון דינאמי	C37404715	Dynamic programming
+אלגוריתמים/תכנון דינאמי - דג הסלמון	C37404715	Dynamic programming (worked example)
+אלגוריתמים/תכנון דינאמי - הכפלת שרשרת מטריצות	new:Matrix chain multiplication|C37404715	Matrix chain multiplication (not in the graph) | Dynamic programming
+גרפים/אלגוריתם "הכפלת מטריצות"	C22590252|C17349429	all-pairs shortest paths by matrix multiplication: Shortest path problem | Matrix multiplication
+גרפים/אלגוריתם Dijkstra	C173870130	Dijkstra's algorithm
+גרפים/אלגוריתם Floyd-Warshall	C186065694	Floyd–Warshall algorithm
+גרפים/אלגוריתם Kruskal	C63645285	Kruskal's algorithm
+גרפים/אלגוריתם Prim	C1649724	Prim's algorithm
+גרפים/אלגוריתם Union-Find	C45340560|new:Disjoint-set data structure	Disjoint sets | Disjoint-set data structure (not in the graph)
+גרפים/אלגוריתמי זרימה	C157469704|C114809511|new:Ford–Fulkerson algorithm	Maximum flow problem | Flow network | Ford–Fulkerson (not in the graph)
+גרפים/אלגוריתמים למציאת עפ"מ	C13743678	Minimum spanning tree
+גרפים/גרפים וייצוגיהם	C88230418|C110484373|C180356752	Graph theory | Adjacency list | Adjacency matrix
+גרפים/זרימה - הגדרות	C114809511|C157469704	Flow network | Maximum flow problem
+גרפים/זרימה שיורית וחתכים	C185690422|new:Max-flow min-cut theorem	Minimum cut | Max-flow min-cut theorem (not in the graph)
+גרפים/חיפוש רוחבי	C138843760	Breadth-first search
+גרפים/מסלולים זולים לכלל הזוגות	C22590252|C186065694	Shortest path problem | Floyd–Warshall
+גרפים/עצים	new:Tree (graph theory)	Tree (graph theory) (not in the graph)
+מבני נתונים/טבלאות ערבול	C67388219|C99138194	Hash table | Hash function
+מבני נתונים/מבני נתונים לקבוצות זרות	C45340560|new:Disjoint-set data structure	Disjoint sets | Disjoint-set data structure (not in the graph)
+מבני נתונים/מחסניות	C9395851	Stack (abstract data type)
+מבני נתונים/עצי חיפוש בינריים	C91154448	Binary search tree
+מבני נתונים/עצים אדומים-שחורים	new:Red–black tree|C135593954	Red–black tree (not in the graph) | Self-balancing binary search tree
+מבני נתונים/רשימות מקושרות	C146101286	Linked list
+מבני נתונים/תורי קדימויות	C26951474|C134757568	Priority queue | Heap (data structure)
+מבני נתונים/תורים	C160403385	Queue
+נספחים/חשיבה רקורסיבית	C168773036	Recursion (computer science)
+נספחים/מתמטיקה	C63405582|C39927690	math appendix (series, logs): Summation | Logarithm
