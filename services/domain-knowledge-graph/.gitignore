@@ -6,3 +6,4 @@ demo-output.txt
 __pycache__/
 runs/
 .pytest_cache/
+materials/

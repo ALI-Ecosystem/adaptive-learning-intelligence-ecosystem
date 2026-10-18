@@ -1,0 +1,26 @@
+unit	gold	note
+01_slides.pdf	C204321447	Natural language processing (course introduction)
+02a_slides.pdf	C2474386|C532629269	Text corpus | Corpus linguistics
+02b_TextProc.pdf	C121329065	Regular expression
+03_ling.pdf	C41895202	Linguistics
+05_LM_slides.pdf	C117884012|C137293760	n-gram | Language model
+06_LM2_slides.pdf	C3770464|C137293760	Smoothing | Language model
+07_NB_classification.pdf	C52001869|C2780479914	Naive Bayes classifier | Document classification
+08a_lexsem_slides.pdf	C98954769|C157659113|C51646954	Lexical semantics | WordNet | Word-sense disambiguation (LectureBank title says "Algorithms for NLP")
+08b_discriminative-features.pdf	C139532973	Linear classifier
+09_discriminative-learning.pdf	C60908668|C12267149|C117568660|C151956035	Perceptron | Support vector machine | Multinomial logistic regression | Logistic regression
+10_pos_slides.pdf	C123406163|C2780684714	Part of speech | Part-of-speech tagging
+11_pos_hmm_slides.pdf	C23224414|C2780684714	Hidden Markov model | Part-of-speech tagging
+12_viterbi_slides.pdf	C60582962|C196455857	Viterbi algorithm | Forward algorithm
+13_annotation_slides.pdf	C2776321320|C61863361|C206134035	Annotation | Inter-rater reliability | Treebank
+14_discriminative-sequence.pdf	C152565575|C22367795|C196956702	Conditional random field | Structured prediction | Maximum-entropy Markov model
+15_syntax_slides.pdf	C60048249|C97212296|C29184939	Syntax | Context-free grammar | Phrase structure grammar
+16_parsing_slides.pdf	C186644900|C199624470|new:CYK algorithm	Parsing | Stochastic context-free grammar | CYK algorithm (not in the graph)
+17_dependency-parsing_slides.pdf	C164883195|new:Dependency parsing	Dependency grammar | Dependency parsing (not in the graph)
+18_coref_slides.pdf	C28076734|C2781449363	Coreference | Anaphora
+19_srl_slides.pdf	C67277372|C185754541	Semantic role labeling | FrameNet (LectureBank title says "NLTK")
+20_MT_slides.pdf	C203005215	Machine translation
+21_distributional_slides.pdf	C2778828372|C2777462759|C89686163	Distributional semantics | Word embedding | Vector space model
+22_deep_learning.pdf	C108583219|C50644808	Deep learning | Artificial neural network
+23_context.pdf	C11693617|C84389358	Pragmatics | Discourse analysis
+24_wrapup.pdf		course summary: no single topic, not scored
