@@ -175,3 +175,21 @@ Gold files (`material/samples/gold-*.tsv`) give 1-3 accepted canonical concepts 
 graph lacks, `new:Name`) for the main topic of each unit. They were written from the unit titles
 and contents before any run. Claude answers are cached in `runs/scrum91-llm-cache.json`, so a
 re-run of the same material costs nothing.
+
+## SCRUM-92: incremental Learner Graph updates
+
+`UPDATE LEARNER GRAPH (existing learner graph, explicit requested change)`. Other ALI components send signed requests; this component stores and shows them. It never decides what the learner knows: the payload is opaque, and there is no mastery, diagnosis or LLM on the write path.
+
+- **Source of truth:** an append-only log in Postgres (`learner_graph/schema.sql`). **View:** a Neo4j projection over the Domain Knowledge Graph — `(:Learner)-[:HAS_CONCEPT]->(:LearnerConcept)-[:INSTANCE_OF]->(:Concept)` and `-[:HAS_RECORD]->(:LearnerRecord:Evidence|:Exposure)`. The view is rebuilt from the log on demand (`rebuild`) and checked against it (`verify`).
+- **Write path** (`learner_graph/service.py`): shape → registered sender → Ed25519 signature → operation allowed → one transaction per learner (advisory lock): idempotency key, operation rules, log rows + outbox row. The projector (`learner_graph/projector.py`) re-syncs only the (learner, concept) part an outbox row names.
+- **Operations:** `ADD_EVIDENCE`, `ADD_EXPOSURE`, `RETRACT`, `SUPERSEDE`. Corrections never delete: they add a row, and the old record stays with `valid = false`. Only the original sender, or a sender with `can_correct_others` (e.g. the teacher console), may correct a record.
+- **Duplicates:** `(sender, request_id)` — same content → `DUPLICATE`, other content → `CONFLICT`; `(sender, source_record_id)` — same record in a new request → `NO_OP`, other content → `CONFLICT`.
+- **Concepts:** identity is the DKG `concept_id` (UUID). A concept the DKG does not have is named instead; the record waits (`PENDING_CONCEPT`) on a ticket that `resolve` sends through SCRUM-89 placement + SCRUM-90 gate, then appears under the accepted (or duplicate-of) concept. A rejected concept's records stay in the log and are never shown.
+
+```bash
+./scrum92.sh setup      # deps, Postgres on 127.0.0.1:5433 (creates postgres.env), schema, tests
+./scrum92.sh demo       # the Jira example on the real graph (needs Neo4j); rerun = all DUPLICATE
+./scrum92.sh project && ./scrum92.sh show
+./scrum92.sh log <learner> | ./scrum92.sh audit | ./scrum92.sh verify | ./scrum92.sh rebuild
+./scrum92.sh resolve    # concepts missing from the DKG -> SCRUM-89/90 (Claude)
+```
