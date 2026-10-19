@@ -4,3 +4,5 @@ neo4j>=5.20
 anthropic>=0.40
 pytest>=8
 pypdf>=4
+psycopg[binary]>=3.2
+cryptography>=42
