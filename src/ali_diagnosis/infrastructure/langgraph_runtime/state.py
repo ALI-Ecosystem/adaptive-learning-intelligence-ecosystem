@@ -57,6 +57,10 @@ class DiagnosisRuntimeState:
     chain-of-thought, hidden reasoning, and raw agent traces.
     Result dictionaries remain provisional until their contracts are defined.
     This state is discarded after the run and is not a persistence contract.
+
+    iteration_count counts completed diagnostic iterations (at validation).
+    loop_count counts validation requests that route to another refinement;
+    an exhausted limit terminates instead of requesting another loop.
     """
 
     request: DiagnosisRunRequest

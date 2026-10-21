@@ -1,1 +1,1 @@
-"""Replaceable LangGraph runtime implementation boundary."""
+"""Implement the WHAT, WHY, synthesis, and validation stages of the Diagnosis workflow."""
