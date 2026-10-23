@@ -9,6 +9,13 @@ This folder is the repository-local architecture source for implementation work 
 
 ## Source
 
+Implementation reference: [Agentic Orchestrator (SCRUM-17)](agentic-orchestrator.md)
+documents the runtime, configuration, controlled tools, tests, and live acceptance status.
+It complements the accepted architecture documents without replacing their decisions.
+
+[SCRUM-17 architecture review](scrum-17-architecture-review.md) records the comparison
+with SCRUM-11, the consolidation decision, and the refactoring verification.
+
 These files are snapshots of the accepted Google Drive design documents, synchronized on 2026-10-07.
 
 Canonical Drive sources:
