@@ -5,7 +5,7 @@ Timeline (decision: same phases for everyone, gaps drawn per learner - option B)
   PRE_TEST      3 items per concept, 2 minutes apart
   INTERVENTION  5-15 minutes later; one exposure per concept (an INSTRUCT)
   PRACTICE      5-20 minutes later; 4 items per concept, 3 minutes apart, help allowed
-  POST_TEST     10-60 minutes later; 3 items per concept, 2 minutes apart
+  POST_TEST     10-60 minutes later; 3 items per concept (post_items), 2 minutes apart
   DELAYED_TEST  1-21 days later (log-uniform); 3 items per concept
 
 No item is shown twice to the same learner. Only PRACTICE items are learning
@@ -25,7 +25,7 @@ from datetime import datetime, timedelta, timezone
 
 from .concepts import CONCEPTS
 from .draws import Draws
-from .items import BANK
+from .items import BANK, ITEMS_PER_CONCEPT, build_bank
 from .learner import DAY, Learner
 from .populations import POPULATIONS, learner_params
 
@@ -36,6 +36,7 @@ SIM_NAMESPACE = uuid.UUID("3d6a9e52-8b1f-5c47-a2e0-5c1a7b0e9393")   # ids made b
 
 MINUTE = 60.0
 PHASE_ITEMS = (("PRE_TEST", 3), ("PRACTICE", 4), ("POST_TEST", 3), ("DELAYED_TEST", 3))
+POST_ITEMS = 3      # default length of the immediate post-test (SCRUM-94 sweeps it)
 CHECKPOINTS = {"POST_TEST": "immediate", "DELAYED_TEST": "delayed"}
 
 
@@ -47,11 +48,11 @@ def _iso(t: float) -> str:
     return (EPOCH + timedelta(seconds=round(t))).isoformat()
 
 
-def plan_timeline(d: Draws) -> tuple[list, dict]:
+def plan_timeline(d: Draws, post_items: int = POST_ITEMS, bank: dict = BANK) -> tuple[list, dict]:
     """The schedule only - which item when. Behaviour comes later."""
-    picks = {c.source_id: d.shuffled([it.item_id for it in BANK[c.source_id]], "items", c.source_id)
+    picks = {c.source_id: d.shuffled([it.item_id for it in bank[c.source_id]], "items", c.source_id)
              for c in CONCEPTS}
-    by_id = {it.item_id: it for items in BANK.values() for it in items}
+    by_id = {it.item_id: it for items in bank.values() for it in items}
     used = {cid: 0 for cid in picks}
     events, times = [], {}
     t = d.uniform(0, 30 * DAY, "start")
@@ -78,7 +79,7 @@ def plan_timeline(d: Draws) -> tuple[list, dict]:
     t += d.uniform(5, 20, "gap", "practice") * MINUTE
     items_phase("PRACTICE", 4, 3 * MINUTE)
     t += d.uniform(10, 60, "gap", "post") * MINUTE
-    items_phase("POST_TEST", 3, 2 * MINUTE)
+    items_phase("POST_TEST", post_items, 2 * MINUTE)
     delay = d.log_uniform(1, 21, "gap", "delayed")
     times["delay_days"] = delay
     t += delay * DAY
@@ -101,7 +102,8 @@ def _checkpoint(real, twin, t: float) -> dict:
     return {"at": _iso(t), "concepts": cp}
 
 
-def simulate_learner(seed: int, index: int, pop) -> tuple[list, dict]:
+def simulate_learner(seed: int, index: int, pop, post_items: int = POST_ITEMS,
+                     bank: dict = BANK) -> tuple[list, dict]:
     d = Draws(seed, index)
     learner_id = _id(seed, "learner", index)
     intervention_id = _id(seed, "intervention", index)
@@ -109,7 +111,7 @@ def simulate_learner(seed: int, index: int, pop) -> tuple[list, dict]:
     misconceptions = ({c.source_id: d.choice([m.misconception_id for m in c.misconceptions],
                                              "holds", c.source_id) for c in CONCEPTS}
                       if pop.holds_misconception else {})
-    events, times = plan_timeline(d)
+    events, times = plan_timeline(d, post_items, bank)
 
     real = Learner(params, d, with_intervention=True)
     twin = Learner(params, d, with_intervention=False)
@@ -176,18 +178,28 @@ def simulate_learner(seed: int, index: int, pop) -> tuple[list, dict]:
     return answers, truth
 
 
-def simulate(seed: int, n_per_population: int, populations=POPULATIONS) -> dict:
+def simulate(seed: int, n_per_population: int, populations=POPULATIONS,
+             post_items: int = POST_ITEMS, items_per_concept: int = ITEMS_PER_CONCEPT) -> dict:
     """Populations are assigned to learner indices by a keyed shuffle, so a learner's index
-    (and the id made from it) does not run through the populations in blocks."""
+    (and the id made from it) does not run through the populations in blocks.
+
+    post_items and items_per_concept (added for SCRUM-94) default to the SCRUM-93 run: with
+    the defaults every file is byte-identical to SCRUM-93's (a test checks the hash)."""
+    used = 3 + 4 + post_items + 3
+    if used > items_per_concept:
+        raise ValueError(f"{used} items per concept needed, the bank has {items_per_concept}: "
+                         "no item may be shown twice")
+    bank = BANK if items_per_concept == ITEMS_PER_CONCEPT else build_bank(items_per_concept)
     slots = [(p.name, j) for p in populations for j in range(n_per_population)]
     order = Draws(seed, -2).shuffled(slots, "population-order")
     by_name = {p.name: p for p in populations}
     answers, truth = [], []
     for index, (name, _) in enumerate(order):
-        a, t = simulate_learner(seed, index, by_name[name])
+        a, t = simulate_learner(seed, index, by_name[name], post_items, bank)
         answers.extend(a)
         truth.append(t)
     answers.sort(key=lambda b: (b["record"]["occurred_at"], b["request_id"]))
     truth.sort(key=lambda t: t["learner_id"])
     return {"seed": seed, "n_per_population": n_per_population,
-            "populations": [p.name for p in populations], "answers": answers, "truth": truth}
+            "populations": [p.name for p in populations], "answers": answers, "truth": truth,
+            "post_items": post_items, "items_per_concept": items_per_concept, "bank": bank}

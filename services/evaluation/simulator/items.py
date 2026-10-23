@@ -44,13 +44,14 @@ class Item:
                             for o in OPTIONS]}
 
 
-def build_bank() -> dict:
-    """{concept_source_id: [Item, ...]}"""
+def build_bank(items_per_concept: int = ITEMS_PER_CONCEPT) -> dict:
+    """{concept_source_id: [Item, ...]}. Item k is the same item in a bank of any size
+    (its options are keyed by its id), so a larger bank only adds items."""
     bank = {}
     for c in CONCEPTS:
         items = []
         mids = [m.misconception_id for m in c.misconceptions]
-        for i in range(1, ITEMS_PER_CONCEPT + 1):
+        for i in range(1, items_per_concept + 1):
             item_id = f"{c.short}-{i:02d}"
             correct = _BANK_DRAWS.choice(OPTIONS, "correct", item_id)
             carried = _BANK_DRAWS.shuffled(mids, "carried", item_id)[:3]
@@ -61,3 +62,7 @@ def build_bank() -> dict:
 
 
 BANK = build_bank()
+
+
+def public_bank(bank: dict) -> list:
+    return [it.to_public() for items in bank.values() for it in items]
