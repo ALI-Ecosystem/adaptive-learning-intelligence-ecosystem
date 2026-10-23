@@ -12,7 +12,8 @@ import hashlib
 import json
 from pathlib import Path
 
-from .items import BANK
+from .items import BANK, ITEMS_PER_CONCEPT, public_bank
+from .generator import POST_ITEMS
 
 
 def _dump(obj) -> str:
@@ -33,7 +34,7 @@ def write_run(result: dict, out_dir) -> dict:
     files = {
         "answers.jsonl": "".join(_dump(b) + "\n" for b in result["answers"]),
         "truth.jsonl": "".join(_dump(t) + "\n" for t in result["truth"]),
-        "items.json": _dump([it.to_public() for items in BANK.values() for it in items]) + "\n",
+        "items.json": _dump(public_bank(result.get("bank", BANK))) + "\n",
     }
     digests = {}
     for name, text in files.items():
@@ -43,6 +44,8 @@ def write_run(result: dict, out_dir) -> dict:
         "generated_by": "SCRUM-93 learner simulator",
         "simulation_result": True,
         "seed": result["seed"], "n_per_population": result["n_per_population"],
+        "post_items": result.get("post_items", POST_ITEMS),
+        "items_per_concept": result.get("items_per_concept", ITEMS_PER_CONCEPT),
         "populations": result["populations"],
         "learners": len(result["truth"]), "records": len(result["answers"]),
         "evidence_records": sum(b["operation"] == "ADD_EVIDENCE" for b in result["answers"]),

@@ -54,3 +54,44 @@ simulator/   draws, concepts, items, populations, learner, generator, records
 harness/     rules.py (answers only) -> score.py (decisions vs truth)
 tests/       validation tests
 ```
+
+## SCRUM-94 — intervention verdict
+
+After a learning intervention, decides whether the learner **now demonstrates the target
+unaided**: `DEMONSTRATED`, `NOT_YET_DEMONSTRATED` or `INSUFFICIENT_EVIDENCE`. It is a
+measurement: it reads Learner State (at the moment of delivery), never writes it, does not
+diagnose, does not choose what comes next, and claims nothing about cause.
+
+```
+./scrum94.sh test              # all tests (SCRUM-93 + SCRUM-94)
+./scrum94.sh all 200           # data (calibration run, seed 93, longer post-tests) + validation
+./scrum94.sh validate          # validation only -> runs/scrum94/results.md
+./scrum94.sh example           # one learner's verdicts, explained
+./scrum94.sh repro             # validation twice, byte-for-byte comparison
+```
+
+### Method (evaluation architecture §3.3–3.4)
+
+* **Eligibility gate** — an answer counts only if it is on the case's tuple, applied,
+  observed directly, from a known plan item, not part of the intervention, after the
+  intervention and before the moment judged (and before the retention point), with no
+  help before it, a first attempt, on an item not answered or shown before, not
+  drift-flagged, with a difficulty. The first failing rule is recorded as the reason.
+* **Prior** — from the Learner State baseline at delivery, centred on *no change*, as wide
+  as Learner State's own 90% interval plus the distance its own learning model allows.
+* **Decision** — against the intervention's fixed target (mastery 0.70): `DEMONSTRATED`
+  needs evidence from the answers alone (Bayes factor ≥ 4) **and** belief (posterior > 0.5);
+  `NOT_YET_DEMONSTRATED` the mirror; anything else is `INSUFFICIENT_EVIDENCE`.
+
+### Layout
+
+```
+verdict/     contracts, standin (read-only Learner State interface + oracle stand-in),
+             betafn (Beta in the standard library), model (prior, grid, BF), engine (gate + evaluate)
+harness/     adapter94 (simulator -> verdict inputs), calibrate (item difficulty, separate run),
+             baselines94 (naive rule, BKT 0.95), contaminate (injected answers),
+             validate94 (all experiments), report94 (generated tables), example94
+```
+
+Simulator additions (defaults leave every SCRUM-93 file byte-identical — a test checks it):
+`--post-items` (length of the immediate post-test) and `--bank` (items per concept).
