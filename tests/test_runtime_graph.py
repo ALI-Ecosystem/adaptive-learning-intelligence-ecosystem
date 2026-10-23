@@ -1,273 +1,178 @@
-"""Verify deterministic orchestration, refinement, snapshots, and failures."""
+"""SCRUM-11 invariants migrated to the single production agentic graph."""
 
+import asyncio
 from copy import deepcopy
 
 import pytest
 from langgraph.graph.state import CompiledStateGraph
 
-from ali_diagnosis.application import CapabilityRegistry, InformationGateway
-from ali_diagnosis.domain import (
-    DiagnosisRunRequest,
-    DiagnosticSourceKind,
-    StructuredDiagnosis,
-    UnresolvedDiagnosis,
-    UnresolvedScope,
+from orchestration_fakes import ScriptedAgent
+from ali_diagnosis.application.orchestration.budget import RunBudget, RunLimits
+from ali_diagnosis.application.orchestration.contracts import ValidationDecision
+from ali_diagnosis.application.orchestration.errors import (
+    DiagnosisExecutionError, InvalidDecisionError, ResourceLimitError,
 )
-from ali_diagnosis.infrastructure.langgraph_runtime.graph import (
-    MAX_REFINEMENT_LOOPS,
-    build_diagnosis_graph,
-)
-from ali_diagnosis.infrastructure.langgraph_runtime.mock_dependencies import (
-    MockDiagnosisCapability,
-    MockInformationSource,
-)
-from ali_diagnosis.infrastructure.langgraph_runtime.state import DiagnosisRuntimeState
+from ali_diagnosis.application.orchestration.state import DiagnosisRuntimeState
+from ali_diagnosis.application.orchestration.tools import DiagnosisTools
+from ali_diagnosis.domain import DiagnosisRunRequest, StructuredDiagnosis
+from ali_diagnosis.infrastructure.langgraph_runtime.graph import build_diagnosis_graph
+from ali_diagnosis.infrastructure.synthetic_scenarios import synthetic_runtime
 
 
 @pytest.fixture
-def state() -> DiagnosisRuntimeState:
-    return DiagnosisRuntimeState(
-        request=DiagnosisRunRequest(
-            diagnosis_run_id="run-1", learner_id="learner-1", evidence_id="evidence-1"
-        )
-    )
+def state():
+    return DiagnosisRuntimeState(DiagnosisRunRequest(
+        diagnosis_run_id="run", learner_id="learner", evidence_id="evidence"))
 
 
-def test_builder_returns_compiled_graph() -> None:
-    graph = build_diagnosis_graph()
+def graph_for(agent, *, max_visits=16, scenario="success"):
+    limits = RunLimits(input_usd_per_million=1, output_usd_per_million=2,
+                       max_stage_visits=max_visits)
+    runtime = synthetic_runtime(agent, limits, scenario)
+    budget = RunBudget(limits)
+
+    def make_tools(state):
+        return DiagnosisTools(state, budget, runtime.gateway, runtime.information,
+                              runtime.anchor_source, runtime.registry, runtime.capabilities)
+
+    return build_diagnosis_graph(agent=agent, make_tools=make_tools, budget=budget)
+
+
+def test_builder_has_four_real_goals_and_no_persistence():
+    graph = graph_for(ScriptedAgent())
     assert isinstance(graph, CompiledStateGraph)
     assert graph.checkpointer is None
     assert graph.store is None
+    assert {"what", "why", "synthesis", "validation"} <= set(graph.nodes)
 
 
 @pytest.mark.parametrize("input_shape", ["dataclass", "dictionary", "request_only"])
-def test_successful_run_accepts_state_shapes(
-    state: DiagnosisRuntimeState, input_shape: str
-) -> None:
-    if input_shape == "dataclass":
-        graph_input = state
-    elif input_shape == "dictionary":
-        graph_input = vars(state).copy()
-    else:
-        graph_input = {"request": state.request}
-
-    result = build_diagnosis_graph().invoke(graph_input)
-
-    assert result["request"] is state.request
-    assert result["current_stage"] == "validation"
-    assert result["iteration_count"] == 1
-    assert result["loop_count"] == 0
-    assert result["latest_validation_result"] == {"is_mock": True, "decision": "accept"}
+def test_successful_run_accepts_original_input_shapes_without_mutating_input(state, input_shape):
+    graph_input = (state if input_shape == "dataclass" else
+                   vars(state).copy() if input_shape == "dictionary" else {"request": state.request})
+    before = deepcopy(graph_input)
+    result = asyncio.run(graph_for(ScriptedAgent()).ainvoke(graph_input))
+    assert graph_input == before
     final = result["final_result"]
     assert isinstance(final, StructuredDiagnosis)
     assert final.diagnosis_run_id == state.request.diagnosis_run_id
-    assert final.learner_id == state.request.learner_id
     assert final.subject_ref == result["subject_ref"]
     assert final.what == result["what_findings"]
     assert final.why == result["why_hypotheses"]
-    assert final.why[0].explains_finding_ids == [final.what[0].finding_id]
-    assert result["retrieved_information"]["mock"]["is_mock"] is True
-    capability = result["capability_results"][0]
-    assert capability["is_mock"] is True
-    assert capability["producer"] == MockDiagnosisCapability.metadata.name
-    source = final.why[0].supporting_sources[0]
-    assert source.source_kind == DiagnosticSourceKind.CAPABILITY_RESULT
-    assert source.source_id == capability["source_id"]
-    assert len(result["diagnostic_history"]) == 1
-    snapshot = result["diagnostic_history"][0]
-    assert snapshot.what_findings == final.what
-    assert snapshot.why_hypotheses == final.why
-    assert snapshot.new_information == result["retrieved_information"]
-    assert snapshot.new_capability_results == result["capability_results"]
-    assert snapshot.synthesis_candidate == result["synthesis_candidate"]
-    assert snapshot.validation_result == result["latest_validation_result"]
-    assert state.current_stage is None
-    assert state.diagnostic_history == []
+    assert result["iteration_count"] == 1
+    assert result["loop_count"] == 0
+    assert "diagnostic_history" not in result
+    assert "case" not in result
 
 
-@pytest.mark.parametrize("refinement", [None, "what", "why"])
-def test_stage_order_and_one_snapshot_per_completed_iteration(
-    state: DiagnosisRuntimeState, refinement: str | None
-) -> None:
-    decisions = ("accept",) if refinement is None else (refinement, "accept")
-    graph = build_diagnosis_graph(validation_decisions=decisions)
-    updates = list(graph.stream(state, stream_mode="updates"))
-    stages = [next(iter(update)) for update in updates]
+@pytest.mark.parametrize("refinement", [None, "what", "why", "synthesis"])
+def test_validation_can_revisit_goals_and_counts_completed_assessments(state, refinement):
+    class RefiningAgent(ScriptedAgent):
+        async def run_stage(self, case, tools, budget):
+            if case.current_stage == "validation" and case.iteration_count == 0 and refinement:
+                self.visits.append(case.current_stage)
+                return ValidationDecision(decision="refine", next_stage=refinement,
+                                          reason="Review the synthetic candidate.")
+            return await super().run_stage(case, tools, budget)
+
+    agent = RefiningAgent()
+    result = asyncio.run(graph_for(agent).ainvoke(state))
     expected = ["what", "why", "synthesis", "validation"]
-    if refinement == "what":
-        expected += ["what", "why", "synthesis", "validation"]
-    elif refinement == "why":
-        expected += ["why", "synthesis", "validation"]
-    assert stages == expected
-    completed = 0
-    for update in updates:
-        stage, values = next(iter(update.items()))
-        assert values["current_stage"] == stage
-        if stage == "validation":
-            completed += 1
-            assert values["iteration_count"] == completed
-            assert len(values["diagnostic_history"]) == completed
-        else:
-            assert "diagnostic_history" not in values
-            assert "iteration_count" not in values
-    final_update = updates[-1]["validation"]
-    assert isinstance(final_update["final_result"], StructuredDiagnosis)
-    assert final_update["loop_count"] == (0 if refinement is None else 1)
-
-
-def test_information_and_capability_use_existing_boundaries(state: DiagnosisRuntimeState) -> None:
-    requests = []
-    invocations = []
-
-    class RecordingSource(MockInformationSource):
-        def get_information(self, request):
-            requests.append(request)
-            result = super().get_information(request)
-            result["source_id"] += f":{len(requests)}"
-            return result
-
-    class RecordingCapability(MockDiagnosisCapability):
-        def analyze(self, request, findings, *, iteration):
-            invocations.append((request, findings, iteration))
-            return super().analyze(request, findings, iteration=iteration)
-
-    registry = CapabilityRegistry()
-    capability = RecordingCapability()
-    registry.register(capability)
-    graph = build_diagnosis_graph(
-        information_gateway=InformationGateway({"mock": RecordingSource()}),
-        capability_registry=registry,
-        validation_decisions=("what", "why", "accept"),
-    )
-    result = graph.invoke(state)
-
-    assert requests == [state.request, state.request]
-    assert [entry[2] for entry in invocations] == [1, 2, 3]
-    assert all(entry[0] is state.request for entry in invocations)
-    assert all(entry[1][0].finding_id == "mock-finding" for entry in invocations)
-    assert registry.resolve(capability.metadata.name) is capability
-    assert len(result["capability_results"]) == 3
-    history = result["diagnostic_history"]
-    assert [snapshot.iteration_count for snapshot in history] == [1, 2, 3]
-    assert [snapshot.loop_count for snapshot in history] == [1, 2, 2]
-    assert history[0].new_information["mock"]["source_id"].endswith(":1")
-    assert history[1].new_information["mock"]["source_id"].endswith(":2")
-    assert history[2].new_information == {}  # WHY-only refinement retrieves nothing.
-    assert [len(snapshot.new_capability_results) for snapshot in history] == [1, 1, 1]
-    assert [snapshot.new_capability_results[0]["source_id"] for snapshot in history] == [
-        result["source_id"] for result in result["capability_results"]
-    ]
-
-
-def test_snapshot_deltas_and_detachment_across_later_mutations(state: DiagnosisRuntimeState) -> None:
-    graph = build_diagnosis_graph(validation_decisions=("what", "accept"))
-    result = graph.invoke(state)
-    history = result["diagnostic_history"]
-    assert len(history) == 2
-    assert history[1].new_information == {}  # Identical context is already recorded.
-    assert len(history[1].new_capability_results) == 1
-    before = deepcopy(history)
-
-    result["what_findings"][0].supporting_sources.clear()
-    result["why_hypotheses"][0].explains_finding_ids.clear()
-    result["retrieved_information"]["mock"]["subject_ref"]["taxonomy_id"] = "changed"
-    result["capability_results"][0]["finding_ids"].clear()
-    result["synthesis_candidate"]["what"].clear()
-    result["latest_validation_result"]["decision"] = "changed"
-
-    assert history == before
-
-
-@pytest.mark.parametrize("refinement", ["what", "why"])
-@pytest.mark.parametrize("limit", [0, MAX_REFINEMENT_LOOPS, 8])
-def test_loop_limit_produces_unresolved_outcome(
-    state: DiagnosisRuntimeState, refinement: str, limit: int
-) -> None:
-    graph = build_diagnosis_graph(
-        validation_decisions=(refinement,), max_refinement_loops=limit
-    )
-    result = graph.invoke(state)
-
-    assert result["loop_count"] == limit
-    assert result["iteration_count"] == limit + 1
-    assert len(result["diagnostic_history"]) == limit + 1
-    assert result["latest_validation_result"] == {"is_mock": True, "decision": "exhausted"}
-    final = result["final_result"]
-    assert isinstance(final, UnresolvedDiagnosis)
-    assert final.unresolved_scope == UnresolvedScope(refinement)
-    assert final.diagnosis_run_id == state.request.diagnosis_run_id
-    assert final.learner_id == state.request.learner_id
-    assert final.subject_ref == result["subject_ref"]
-    assert final.relevant_sources
-    assert "refinement-loop limit" in final.reason
-    assert result["diagnostic_history"][-1].validation_result["decision"] == "exhausted"
-
-
-def test_acceptance_on_last_permitted_iteration(state: DiagnosisRuntimeState) -> None:
-    graph = build_diagnosis_graph(
-        validation_decisions=("what", "why", "accept"), max_refinement_loops=2
-    )
-    result = graph.invoke(state)
-    assert result["loop_count"] == 2
-    assert result["iteration_count"] == 3
+    if refinement:
+        expected += expected[expected.index(refinement):]
+    assert agent.visits == expected
+    assert result["stage_visits"] == len(expected)
+    assert result["iteration_count"] == (2 if refinement else 1)
+    assert result["loop_count"] == (1 if refinement else 0)
     assert isinstance(result["final_result"], StructuredDiagnosis)
 
 
-@pytest.mark.parametrize("dependency", ["information", "capability"])
-def test_dependency_failure_propagates_without_unresolved_fallback(
-    state: DiagnosisRuntimeState, dependency: str
-) -> None:
-    failure = RuntimeError(f"Mock {dependency} failed")
+def test_stream_updates_keep_earlier_public_values_detached(state):
+    async def run():
+        saved = []
+        async for update in graph_for(ScriptedAgent(refine=True)).astream(state, stream_mode="updates"):
+            # Earlier graph updates must not be mutated by later goals or their tools.
+            assert all(value == original for value, original in saved)
+            saved.append((update, deepcopy(update)))
+        result = saved[-1][0]["validation"]
+        result["what_findings"][0].supporting_sources.clear()
+        assert saved[0][0] == saved[0][1]
+        assert state.what_findings == []
+        assert [next(iter(item[0])) for item in saved] == [
+            "what", "why", "what", "why", "synthesis", "validation"]
+    asyncio.run(run())
 
-    class FailingSource(MockInformationSource):
-        def get_information(self, request):
-            raise failure
 
-    class FailingCapability(MockDiagnosisCapability):
-        def analyze(self, request, findings, *, iteration):
-            raise failure
+@pytest.mark.parametrize("stage", ["what", "why", "synthesis", "validation"])
+def test_every_goal_can_loop_but_is_bounded(state, stage):
+    class LoopingAgent(ScriptedAgent):
+        async def run_stage(self, case, tools, budget):
+            decision = await super().run_stage(case, tools, budget)
+            if case.finalization_reason:
+                return decision
+            if case.current_stage != stage:
+                return decision
+            if stage == "validation":
+                return ValidationDecision(decision="refine", next_stage=stage, reason="Still unresolved.")
+            return decision.model_copy(update={"next_stage": stage})
 
-    if dependency == "information":
-        graph = build_diagnosis_graph(
-            information_gateway=InformationGateway({"mock": FailingSource()})
-        )
-    else:
-        registry = CapabilityRegistry()
-        registry.register(FailingCapability())
-        graph = build_diagnosis_graph(capability_registry=registry)
-    updates = []
-    with pytest.raises(RuntimeError) as caught:
-        for update in graph.stream(state, stream_mode="updates"):
-            updates.append(update)
-    assert caught.value is failure
-    assert all("validation" not in update for update in updates)
+    agent = LoopingAgent()
+    result = asyncio.run(graph_for(agent, max_visits=6).ainvoke(state))
+    assert result["stage_visits"] <= 6
+    assert agent.visits.count(stage) >= 2
+    assert result["final_result"] is not None
+    assert agent.visits[-1] == "validation"
+    assert state.stage_visits == 0
     assert state.final_result is None
-    assert state.diagnostic_history == []
 
 
-def test_compiled_graph_reuses_no_state_between_runs(state: DiagnosisRuntimeState) -> None:
-    graph = build_diagnosis_graph(validation_decisions=("why", "accept"))
-    first = graph.invoke(state)
-    second_state = DiagnosisRuntimeState(
-        request=DiagnosisRunRequest(
-            diagnosis_run_id="run-2", learner_id="learner-2", evidence_id="evidence-2"
-        )
-    )
-    second = graph.invoke(second_state)
-    assert first["iteration_count"] == second["iteration_count"] == 2
-    assert first["loop_count"] == second["loop_count"] == 1
-    assert second["final_result"].diagnosis_run_id == "run-2"
-    assert len(second["diagnostic_history"]) == 2
-    assert second["diagnostic_history"] is not first["diagnostic_history"]
-    assert second["capability_results"][0]["source_id"].startswith("run-2:")
+def test_acceptance_at_last_permitted_visit(state):
+    result = asyncio.run(graph_for(ScriptedAgent(), max_visits=4).ainvoke(state))
+    assert isinstance(result["final_result"], StructuredDiagnosis)
+    assert result["stage_visits"] == 4
 
 
-@pytest.mark.parametrize("decisions", [(), ("invalid",)])
-def test_invalid_mock_decisions_fail_at_build_time(decisions: tuple[str, ...]) -> None:
-    with pytest.raises(ValueError, match="validation_decisions"):
-        build_diagnosis_graph(validation_decisions=decisions)
+def test_failed_tools_remain_visible_after_stage_transition(state):
+    with pytest.raises(DiagnosisExecutionError, match="Unrecovered tool failures"):
+        asyncio.run(graph_for(ScriptedAgent(unresolved=True), scenario="tool_failure").ainvoke(state))
+    assert state.tool_failures == set()
+    assert state.artifacts == {}
 
 
-def test_negative_loop_limit_fails_at_build_time() -> None:
-    with pytest.raises(ValueError, match="max_refinement_loops"):
-        build_diagnosis_graph(max_refinement_loops=-1)
+def test_wrong_output_type_does_not_publish_partial_tool_state(state):
+    class WrongAgent:
+        async def run_stage(self, case, tools, budget):
+            await tools.call("get_information", {"source": "trigger"})
+            return ValidationDecision(decision="unresolved", reason="Wrong stage type.")
+
+    with pytest.raises(InvalidDecisionError, match="Wrong stage"):
+        asyncio.run(graph_for(WrongAgent()).ainvoke(state))
+    assert state.artifacts == {}
+    assert state.subject_ref is None
+
+
+def test_runtime_reuses_configuration_without_sharing_concurrent_run_state(state):
+    limits = RunLimits(input_usd_per_million=1, output_usd_per_million=2)
+    runtime = synthetic_runtime(ScriptedAgent(), limits, "success")
+    other = state.request.model_copy(update={"diagnosis_run_id": "other", "learner_id": "other-learner"})
+
+    async def run():
+        return await asyncio.gather(runtime.run(state.request), runtime.run(other))
+
+    first, second = asyncio.run(run())
+    assert first.outcome.learner_id == "learner"
+    assert second.outcome.learner_id == "other-learner"
+    assert first.tool_calls == second.tool_calls == 1
+    assert first.stage_visits == second.stage_visits == 4
+    assert all(a.diagnosis_run_id == "other" for a in second.artifacts)
+    assert all(a.diagnosis_run_id == "run" for a in first.artifacts)
+
+
+def test_new_stage_tools_still_share_the_run_budget(state):
+    limits = RunLimits(input_usd_per_million=1, output_usd_per_million=2, max_tool_calls=1)
+    runtime = synthetic_runtime(ScriptedAgent(capability=True), limits, "success")
+    # WHAT spends the one allowed retrieval; WHY's discovery must not get a new budget.
+    report = asyncio.run(runtime.run(state.request))
+    assert report.outcome.status == "unresolved"
+    assert "Tool call limit" in report.resource_limit_reason
+    assert report.tool_calls == 1

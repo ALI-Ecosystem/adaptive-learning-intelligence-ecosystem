@@ -1,1 +1,5 @@
-"""Implement the WHAT, WHY, synthesis, and validation stages of the Diagnosis workflow."""
+"""Adaptive Diagnosis runtime composed by the single graph.py implementation."""
+
+from .runtime import LangGraphDiagnosisRuntime
+
+__all__ = ["LangGraphDiagnosisRuntime"]
