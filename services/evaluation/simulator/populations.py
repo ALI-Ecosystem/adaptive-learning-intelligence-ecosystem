@@ -20,6 +20,19 @@ none is fitted to data. Parameter meanings:
   p_M_known   chance a learner who knows still picks his misconception's distractor
   p_M_unknown chance a learner who does not know picks it
   p_M_remove  chance the intervention removes a held misconception
+
+Added for SCRUM-95 (all default to "off", so every SCRUM-93 population is unchanged):
+  p_T_help    chance that a PRACTICE item answered WITH help teaches the concept. 0 for
+              every population except LEARNS_FROM_HELP: by default help teaches nothing
+              (SCRUM-93 decision A stays) - decision SCRUM-95 Q3 option A (PROJECT ASSUMPTION)
+  help_conf_boost, boost_half_life_days
+              after a help, the learner's confidence on later answers of that concept is
+              raised by help_conf_boost, fading by half every boost_half_life_days since the
+              LATEST help (boosts do not add up: a first version summed them and confidence
+              sat at the ceiling, +4 on average). Non-zero only in
+              HELP_INFLATED - decision SCRUM-95 Q5 option B. The direction is anchored in
+              Bassner et al. (2025): fluent AI help is read as evidence of learning; the
+              size and the fading are PROJECT ASSUMPTIONS.
 """
 from dataclasses import dataclass, replace
 
@@ -39,6 +52,9 @@ class Params:
     p_M_known: float = 0.25
     p_M_unknown: float = 0.60
     p_M_remove: float = 0.0
+    p_T_help: float = 0.0
+    help_conf_boost: float = 0.0
+    boost_half_life_days: float = 1.0
 
 
 LEARNS = Params(p_T_int=0.70, p_T_after=0.30)
@@ -71,7 +87,28 @@ POPULATIONS = (
                Params(p_T_int=0.50, p_T_after=0.20, p_M_remove=0.30), holds_misconception=True),
 )
 
-BY_NAME = {p.name: p for p in POPULATIONS}
+# ---- SCRUM-95 populations (decisions Q2, Q3) -----------------------------------------------
+# Each new population switches on ONE gap, so each measure can be tested on its own.
+# They are NOT part of POPULATIONS: adding them there would reshuffle the learner order of
+# every SCRUM-93/94 run. A SCRUM-95 run asks for ALL_POPULATIONS explicitly.
+# Learning rates are low on purpose: over three rounds a learner gets three interventions and
+# twelve practice items, and "learns a little" must stay a little (about 3 in 10 by round 3;
+# with CONFIDENT_WRONG's rates it was 6 in 10).
+HELP_LEARNING = Params(p_L0=0.05, p_T=0.01, p_T_int=0.03, p_T_after=0.02, p_help=0.70)
+
+POPULATIONS_95 = (
+    Population("HELP_DEPENDENT", "asks for help often, learns a little, calibrated "
+               "confidence - the control for HELP_INFLATED", HELP_LEARNING),
+    Population("HELP_INFLATED", "like HELP_DEPENDENT, but help raises his confidence on "
+               "later answers, fading with a 1-day half-life since the latest help",
+               replace(HELP_LEARNING, help_conf_boost=1.5, boost_half_life_days=1.0)),
+    Population("LEARNS_FROM_HELP", "starts not knowing, asks for help often, and every helped "
+               "practice item can teach him", replace(HELP_LEARNING, p_T_help=0.15)),
+)
+
+ALL_POPULATIONS = POPULATIONS + POPULATIONS_95
+BY_NAME = {p.name: p for p in ALL_POPULATIONS}
+SCRUM95_FIELDS = ("p_T_help", "help_conf_boost", "boost_half_life_days")
 
 JITTER = (0.75, 1.25)       # per-learner multiplier on p_T_int and p_T_after (individual BKT)
 

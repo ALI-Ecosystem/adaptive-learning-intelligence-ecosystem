@@ -51,6 +51,9 @@ def write_run(result: dict, out_dir) -> dict:
         "evidence_records": sum(b["operation"] == "ADD_EVIDENCE" for b in result["answers"]),
         "sha256": digests, "simulator_source_sha256": source_digest(),
     }
+    if "config" in result:                  # SCRUM-95 run: record the settings used
+        manifest["config"] = result["config"]
+        manifest["generated_by"] = "SCRUM-93 learner simulator (SCRUM-95 extensions)"
     (out / "manifest.json").write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n",
                                        encoding="utf-8")
     return manifest

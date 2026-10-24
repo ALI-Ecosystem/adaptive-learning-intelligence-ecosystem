@@ -13,9 +13,13 @@ concept the learner either knows it or does not. Added to standard BKT:
   * misconception - a separate state: it can be held whether or not the concept is known
                   (decision: option B) and the intervention removes it with p_M_remove.
   * help        - raises the chance of a correct answer on that item only; it teaches
-                  nothing (decision: option A, PROJECT ASSUMPTION).
+                  nothing (decision: option A, PROJECT ASSUMPTION). SCRUM-95: p_T_help > 0
+                  (LEARNS_FROM_HELP only) lets a helped PRACTICE item teach; a helped TEST
+                  item never teaches. help_forced marks an assisted test item, where help
+                  is always given.
   * confidence  - 1..5, calibrated to the true state, plus noise and a per-learner bias
-                  that is 0 except in CONFIDENT_WRONG (PROJECT ASSUMPTION).
+                  that is 0 except in CONFIDENT_WRONG (PROJECT ASSUMPTION). SCRUM-95: a
+                  fading boost after each help (HELP_INFLATED only).
 
 The same class runs the learner and its twin (with_intervention=False). Both read the
 same keyed random numbers, so they differ only through the intervention.
@@ -41,6 +45,8 @@ class Answer:
     correct: bool
     confidence: int
     path: str           # truth only: KNOWS, SLIP, MISCONCEPTION, GUESS, HELP
+    boost: float = 0.0  # truth only: the help confidence boost added to this answer
+    uninflated: int = 0  # truth only: the rating without conf_bias and boost (SCRUM-95 truth)
 
 
 @dataclass
@@ -51,6 +57,7 @@ class Learner:
     states: dict = field(default_factory=dict)
     intervened: set = field(default_factory=set)
     transitions: list = field(default_factory=list)
+    help_times: dict = field(default_factory=dict)     # {cid: [t of each help]} (SCRUM-95)
 
     # ---- setup ---------------------------------------------------------------------------
     def start(self, concepts, t0: float, misconceptions: dict):
@@ -94,14 +101,22 @@ class Learner:
             self.transitions.append((t, cid, f"MISCONCEPTION_REMOVED:{st.misconception}"))
             st.misconception = None
 
-    def practice_opportunity(self, cid: str, t: float, key):
+    def practice_opportunity(self, cid: str, t: float, key, had_help: bool = False):
         """After every PRACTICE item: the BKT learning transition, and a fresh forgetting
         moment if the learner knows (practice while knowing resets the forgetting clock).
         Test items are not learning opportunities (no feedback): see generator.py.
 
         Twin coupling: both use the same number u for the same item, and p_T_after >= p_T,
-        so whenever the twin learns (u < p_T) the learner learns too (u < p_T_after)."""
+        so whenever the twin learns (u < p_T) the learner learns too (u < p_T_after).
+
+        SCRUM-95: a helped item can teach first (p_T_help). The twin practises the same
+        items and gets the same help (the help draw does not depend on the state), and both
+        use the same number for it, so the coupling still holds."""
         p, st = self.params[cid], self.states[cid]
+        if (had_help and p.p_T_help > 0 and not st.known
+                and self.draws.bernoulli(p.p_T_help, "T_help", cid, key)):
+            st.known = True
+            self.transitions.append((t, cid, "LEARNED_FROM_HELP"))
         rate = p.p_T_after if cid in self.intervened else p.p_T
         if not st.known and self.draws.bernoulli(rate, "T", cid, key):
             st.known = True
@@ -110,12 +125,21 @@ class Learner:
             self._draw_forget(cid, t, "practice", key)
 
     # ---- behaviour -----------------------------------------------------------------------
-    def answer(self, item, t: float, help_allowed: bool, key) -> tuple[Answer, bool]:
+    def confidence_boost(self, cid: str, t: float) -> float:
+        """The fading boost from the latest earlier help on this concept (SCRUM-95)."""
+        p = self.params[cid]
+        earlier = [th for th in self.help_times.get(cid, ()) if th < t]
+        if not p.help_conf_boost or not earlier:
+            return 0.0
+        return p.help_conf_boost * 0.5 ** ((t - max(earlier)) / (p.boost_half_life_days * DAY))
+
+    def answer(self, item, t: float, help_allowed: bool, key,
+               help_forced: bool = False) -> tuple[Answer, bool]:
         """One answer to one item at time t. Returns (answer, had_help)."""
         cid = item.concept_source_id
         self.apply_forgetting(cid, t)
         p, st, d = self.params[cid], self.states[cid], self.draws
-        had_help = help_allowed and d.bernoulli(p.p_help, "help", key)
+        had_help = help_forced or (help_allowed and d.bernoulli(p.p_help, "help", key))
         mis_opt = item.option_for(st.misconception) if st.misconception else None
         distractors = [o for o, _ in item.distractors]
 
@@ -135,6 +159,12 @@ class Learner:
                 chosen, path = d.choice(OPTIONS, "guess", key), "GUESS"
 
         base = CONF_KNOWN if st.known else CONF_UNKNOWN
-        raw = base + p.conf_bias + CONF_NOISE_SD * d.normal("confidence", key)
+        boost = self.confidence_boost(cid, t)          # 0.0 unless HELP_INFLATED
+        noise = CONF_NOISE_SD * d.normal("confidence", key)
+        raw = base + p.conf_bias + boost + noise
         confidence = int(min(5, max(1, round(raw))))
-        return Answer(chosen, chosen == item.correct_option, confidence, path), had_help
+        uninflated = int(min(5, max(1, round(base + noise))))
+        if had_help and p.help_conf_boost:
+            self.help_times.setdefault(cid, []).append(t)
+        return (Answer(chosen, chosen == item.correct_option, confidence, path, boost, uninflated),
+                had_help)
