@@ -1,0 +1,8 @@
+﻿[mcp_servers.ali-mcp-experiment]
+command = 'C:\Program Files\nodejs\node.exe'
+args = ['C:\Users\edenl\OneDrive\Studies\final project\adaptive-learning-intelligence-ecosystem\services\mcp-server\dist\index.js']
+enabled = true
+enabled_tools = ['whenActive']
+startup_timeout_sec = 10
+tool_timeout_sec = 10
+

@@ -54,6 +54,7 @@ does not provide a combined Python installation or whole-repository test command
 | Domain Knowledge Graph (Python) | [services/domain-knowledge-graph](services/domain-knowledge-graph/README.md) |
 | Evaluation tooling (Python) | [services/evaluation](services/evaluation/README.md) |
 | Learner State (TypeScript/NestJS) | [services/learner-state](services/learner-state/README.md) |
+| MCP Server (TypeScript) | [services/mcp-server](services/mcp-server/README.md) |
 
 Run installation, build, and test commands from the relevant component directory.
 Diagnosis's package remains `ali_diagnosis`; its `pyproject.toml`, `src/`, and
