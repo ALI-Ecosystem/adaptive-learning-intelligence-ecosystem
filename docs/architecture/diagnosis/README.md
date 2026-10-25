@@ -2,6 +2,10 @@
 
 This folder is the repository-local architecture source for implementation work on the ALI Diagnosis Engine.
 
+The Python project lives in [`services/diagnosis/`](../../../services/diagnosis/README.md).
+Its package name remains `ali_diagnosis`; these central architecture documents
+remain in their existing location.
+
 ## Documents
 
 - `diagnosis-engine.md` — accepted high-level Diagnosis Engine architecture.

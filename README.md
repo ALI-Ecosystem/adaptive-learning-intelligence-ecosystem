@@ -41,3 +41,21 @@ Personal Knowledge Graph
 Learning Diagnosis Engine
         ↓
 Adaptive Learning Path + Dynamic Practice
+```
+
+## Repository components
+
+Each component owns its dependencies and execution commands. The repository root
+does not provide a combined Python installation or whole-repository test command.
+
+| Component | Location and instructions |
+| --- | --- |
+| Diagnosis Engine (Python) | [services/diagnosis](services/diagnosis/README.md) |
+| Domain Knowledge Graph (Python) | [services/domain-knowledge-graph](services/domain-knowledge-graph/README.md) |
+| Evaluation tooling (Python) | [services/evaluation](services/evaluation/README.md) |
+| Learner State (TypeScript/NestJS) | [services/learner-state](services/learner-state/README.md) |
+
+Run installation, build, and test commands from the relevant component directory.
+Diagnosis's package remains `ali_diagnosis`; its `pyproject.toml`, `src/`, and
+`tests/` now live together in `services/diagnosis/`. Central architecture documents
+remain under [docs/architecture/diagnosis](docs/architecture/diagnosis/README.md).

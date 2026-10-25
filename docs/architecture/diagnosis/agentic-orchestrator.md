@@ -50,7 +50,7 @@ share the same prompts, structured-output tool strategy, and application interfa
 
 There is one production graph. The former parallel `agent_graph.py`, `Case`, mock-only
 node bodies, mock dependencies and snapshot history have been removed. Test agents
-live in `tests/orchestration_fakes.py`; all graph tests use the production builder.
+live in `services/diagnosis/tests/orchestration_fakes.py`; all graph tests use the production builder.
 Callers use `LangGraphDiagnosisRuntime`, exported from `langgraph_runtime`, through
 the application `DiagnosisRuntime` protocol. See the
 [architecture review](scrum-17-architecture-review.md) for the comparison and rationale.
@@ -259,16 +259,18 @@ adapters must also be asynchronous/cooperative and avoid blocking the event loop
 
 ## Installation and execution
 
-From the repository, with Python 3.11+:
+From the repository root, with Python 3.11+ (all subsequent execution/test
+commands use `services/diagnosis/` as their working directory):
 
 ```powershell
+cd services/diagnosis
 python -m venv .venv
 .venv/Scripts/python.exe -m pip install -e '.[dev,openai,anthropic,deepseek,google_genai,groq]'
 .venv/Scripts/python.exe -m pytest -q -m 'not live'
 ```
 
 The local pre-existing `.venv` was unusable during implementation; verification used
-an isolated `.cache/scrum17-venv` with Python 3.13.3. This does not change the supported
+an isolated repository-root `.cache/scrum17-venv` with Python 3.13.3. This does not change the supported
 Python requirement or overwrite the user's existing environment.
 
 Set configuration as JSON; credentials remain in the named environment variable:
@@ -277,7 +279,7 @@ Set configuration as JSON; credentials remain in the named environment variable:
 $env:ALI_DIAGNOSIS_MODEL_CONFIG = '{"provider":"openai","model":"YOUR_MODEL_ID","api_key_env":"OPENAI_API_KEY"}'
 # Supply actual conservative prices for your selected provider/model:
 $env:ALI_DIAGNOSIS_LIMITS = '{"input_usd_per_million":1,"output_usd_per_million":2,"max_cost_usd":1,"max_input_tokens":64000,"max_output_tokens":4096,"max_seconds":180}'
-python -m ali_diagnosis.infrastructure.synthetic_cli success
+.venv/Scripts/python.exe -m ali_diagnosis.infrastructure.synthetic_cli success
 ```
 
 The prices above are illustrative, **not provider price quotes**. Running the CLI
@@ -430,7 +432,7 @@ does not pass. A ninth test exercises an alternate provider when configured.
 $env:ALI_DIAGNOSIS_RUN_LIVE = '1'
 # Optional second provider, required for live substitution acceptance:
 $env:ALI_DIAGNOSIS_ALTERNATE_MODEL_CONFIG = '{"provider":"anthropic","model":"YOUR_MODEL_ID","api_key_env":"ANTHROPIC_API_KEY"}'
-python -m pytest tests/test_live_diagnosis.py -q
+.venv/Scripts/python.exe -m pytest tests/test_live_diagnosis.py -q
 ```
 
 Each scenario receives its own run budget, so the suite's worst-case reservation is

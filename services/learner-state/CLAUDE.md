@@ -4,7 +4,7 @@ This directory is the **Learner State (LS)** module of the ALI final project (bl
 
 **Read the repo-root `AGENTS.md` first** — it is the team's instructions for AI agents and applies here too. Where it conflicts with this file, stop and ask Kody.
 
-**The repo root is a Python project** (`pyproject.toml`, `src/ali_diagnosis` = Eden's Diagnosis Engine). LS is TypeScript/NestJS and must be **self-contained in this directory**: its own `package.json`, `tsconfig.json`, lockfile, lint config and `node_modules`. Never edit `pyproject.toml`, `src/`, `tests/` or other root files; if something root-level is needed (e.g. a `.gitignore` line for `node_modules`), propose it to Kody instead of doing it.
+**The repo root is a monorepo**; Eden's Diagnosis Engine is a separate Python project under `services/diagnosis/` (its own `pyproject.toml`, `src/ali_diagnosis`, and `tests/`). LS is TypeScript/NestJS and must be **self-contained in this directory**: its own `package.json`, `tsconfig.json`, lockfile, lint config and `node_modules`. Never edit other services or root files; if something root-level is needed (e.g. a `.gitignore` line for `node_modules`), propose it to Kody instead of doing it.
 
 ## Who you are working with
 - **Kody** owns this module and builds it alone, ~2–3 days a week. Prototype due end of academic year.

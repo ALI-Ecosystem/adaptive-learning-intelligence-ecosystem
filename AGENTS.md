@@ -2,9 +2,9 @@
 
 ## Diagnosis Engine
 
-For work under `src/ali_diagnosis/`:
+For work under `services/diagnosis/`:
 
-1. Read `docs/architecture/diagnosis/README.md` before implementation.
+1. Read `docs/architecture/diagnosis/README.md` (relative to the repository root) before implementation.
 2. Read the architecture documents relevant to the task.
 3. Treat those documents as architectural constraints.
 4. Prefer the simplest implementation that satisfies the current requirement; follow YAGNI.
