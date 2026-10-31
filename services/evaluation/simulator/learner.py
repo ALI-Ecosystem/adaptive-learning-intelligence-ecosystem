@@ -21,15 +21,30 @@ concept the learner either knows it or does not. Added to standard BKT:
                   that is 0 except in CONFIDENT_WRONG (PROJECT ASSUMPTION). SCRUM-95: a
                   fading boost after each help (HELP_INFLATED only).
 
+SCRUM-96 (all off by default):
+  * depth       a learner who knows holds either the IDEA or only the PATTERN of the
+                practised problems (drawn with p_idea at every move to "knows"). Ordinary
+                items: either is enough. A TRANSFER_PROBLEM item: only the idea; a learner
+                with the pattern only answers it like a learner who does not know.
+  * p_T_err     a wrong practice answer after the intervention can teach (ERRORS_THEN_LEARNS).
+  * p_M_clear_on_learn  coming to know the concept can clear the held misconception.
+  * explanation the Evidence module's grade of a short written explanation, drawn from the
+                true depth (see explanation_grade).
+
 The same class runs the learner and its twin (with_intervention=False). Both read the
 same keyed random numbers, so they differ only through the intervention.
 """
 from dataclasses import dataclass, field
 
-from .items import OPTIONS
+from .items import OPTIONS, TRANSFER
 
 DAY = 86_400.0
 CONF_KNOWN, CONF_UNKNOWN, CONF_NOISE_SD = 4.0, 2.2, 1.0
+IDEA, PATTERN = "IDEA", "PATTERN"
+# SCRUM-96 explanation grades (the Evidence module's rubric score, 0..1): mean by true
+# state, plus normal noise, clipped. SIMULATION SETTINGS (PROJECT ASSUMPTION).
+EXPLANATION_MEAN = {IDEA: 0.85, PATTERN: 0.55, None: 0.15}
+EXPLANATION_SD = 0.15
 
 
 @dataclass
@@ -37,6 +52,7 @@ class ConceptState:
     known: bool
     misconception: str | None
     forget_at: float | None = None          # seconds since the run epoch
+    depth: str | None = None                # SCRUM-96: IDEA or PATTERN while known
 
 
 @dataclass
@@ -67,6 +83,7 @@ class Learner:
             st = ConceptState(known, misconceptions.get(c.source_id))
             self.states[c.source_id] = st
             if known:
+                self._set_depth(c.source_id, "start")
                 self._draw_forget(c.source_id, t0, "start")
                 self.transitions.append((t0, c.source_id, "KNOWN_AT_START"))
 
@@ -77,11 +94,33 @@ class Learner:
         u = max(self.draws.u("forget", cid, *key), 1e-12)
         self.states[cid].forget_at = t + p.tau_days * DAY * (u ** (-1.0 / p.d) - 1.0)
 
+    def _set_depth(self, cid: str, *key):
+        """IDEA or PATTERN, drawn when the learner comes to know the concept. Keyed by the
+        event, so a learner and his twin who learn at the same event get the same depth.
+        With the default p_idea = 1 it is always IDEA (and the draw changes nothing else:
+        every number is keyed)."""
+        p = self.params[cid]
+        self.states[cid].depth = IDEA if self.draws.bernoulli(p.p_idea, "idea", cid, *key) \
+            else PATTERN
+
+    def _learned(self, cid: str, t: float, event: str, *key):
+        """Every move to "knows": depth, and the SCRUM-96 misconception clearing."""
+        st, p = self.states[cid], self.params[cid]
+        st.known = True
+        self.transitions.append((t, cid, event))
+        self._set_depth(cid, *key)
+        if st.depth == PATTERN:
+            self.transitions.append((t, cid, "PATTERN_ONLY"))
+        if (st.misconception and p.p_M_clear_on_learn > 0
+                and self.draws.bernoulli(p.p_M_clear_on_learn, "M_clear", cid, *key)):
+            self.transitions.append((t, cid, f"MISCONCEPTION_CLEARED_ON_LEARN:{st.misconception}"))
+            st.misconception = None
+
     def apply_forgetting(self, cid: str, t: float):
         st = self.states[cid]
         if st.known and st.forget_at is not None and t >= st.forget_at:
             self.transitions.append((st.forget_at, cid, "FORGOT"))
-            st.known, st.forget_at = False, None
+            st.known, st.forget_at, st.depth = False, None, None
 
     def intervene(self, cid: str, t: float, key):
         """The intervention. The twin skips it entirely."""
@@ -91,8 +130,7 @@ class Learner:
         p, st = self.params[cid], self.states[cid]
         self.intervened.add(cid)
         if not st.known and self.draws.bernoulli(p.p_T_int, "T_int", cid, key):
-            st.known = True
-            self.transitions.append((t, cid, "LEARNED_AT_INTERVENTION"))
+            self._learned(cid, t, "LEARNED_AT_INTERVENTION", "int", key)
             self._draw_forget(cid, t, "int", key)
         # A learner who already knew keeps his forgetting moment: a fresh draw here would
         # be a draw the twin never gets, and could make the learner forget while the twin
@@ -101,7 +139,8 @@ class Learner:
             self.transitions.append((t, cid, f"MISCONCEPTION_REMOVED:{st.misconception}"))
             st.misconception = None
 
-    def practice_opportunity(self, cid: str, t: float, key, had_help: bool = False):
+    def practice_opportunity(self, cid: str, t: float, key, had_help: bool = False,
+                             answered_correct: bool = True):
         """After every PRACTICE item: the BKT learning transition, and a fresh forgetting
         moment if the learner knows (practice while knowing resets the forgetting clock).
         Test items are not learning opportunities (no feedback): see generator.py.
@@ -111,16 +150,19 @@ class Learner:
 
         SCRUM-95: a helped item can teach first (p_T_help). The twin practises the same
         items and gets the same help (the help draw does not depend on the state), and both
-        use the same number for it, so the coupling still holds."""
+        use the same number for it, so the coupling still holds.
+
+        SCRUM-96: after the intervention, a WRONG answer raises the rate by p_T_err. The twin
+        never gets the intervention, so his rate is p_T and the coupling still holds."""
         p, st = self.params[cid], self.states[cid]
         if (had_help and p.p_T_help > 0 and not st.known
                 and self.draws.bernoulli(p.p_T_help, "T_help", cid, key)):
-            st.known = True
-            self.transitions.append((t, cid, "LEARNED_FROM_HELP"))
+            self._learned(cid, t, "LEARNED_FROM_HELP", "help", key)
         rate = p.p_T_after if cid in self.intervened else p.p_T
+        if cid in self.intervened and not answered_correct:
+            rate = min(1.0, rate + p.p_T_err)
         if not st.known and self.draws.bernoulli(rate, "T", cid, key):
-            st.known = True
-            self.transitions.append((t, cid, "LEARNED_IN_PRACTICE"))
+            self._learned(cid, t, "LEARNED_IN_PRACTICE", "practice", key)
         if st.known:
             self._draw_forget(cid, t, "practice", key)
 
@@ -142,10 +184,12 @@ class Learner:
         had_help = help_forced or (help_allowed and d.bernoulli(p.p_help, "help", key))
         mis_opt = item.option_for(st.misconception) if st.misconception else None
         distractors = [o for o, _ in item.distractors]
+        # SCRUM-96: a new kind of problem needs the idea; the pattern alone is not knowing it
+        knows_here = st.known and (item.kind != TRANSFER or st.depth != PATTERN)
 
         if had_help and d.bernoulli(p.p_help_correct, "help_carries", key):
             chosen, path = item.correct_option, "HELP"
-        elif st.known:
+        elif knows_here:
             if mis_opt and d.bernoulli(p.p_M_known, "mis_known", key):
                 chosen, path = mis_opt, "MISCONCEPTION"
             elif d.bernoulli(p.p_S, "slip", key):
@@ -158,6 +202,8 @@ class Learner:
             else:
                 chosen, path = d.choice(OPTIONS, "guess", key), "GUESS"
 
+        if st.known and not knows_here:
+            path = "PATTERN_ONLY_" + path              # truth only
         base = CONF_KNOWN if st.known else CONF_UNKNOWN
         boost = self.confidence_boost(cid, t)          # 0.0 unless HELP_INFLATED
         noise = CONF_NOISE_SD * d.normal("confidence", key)
@@ -168,3 +214,11 @@ class Learner:
             self.help_times.setdefault(cid, []).append(t)
         return (Answer(chosen, chosen == item.correct_option, confidence, path, boost, uninflated),
                 had_help)
+
+
+def explanation_grade(state: ConceptState, draws, key) -> float:
+    """SCRUM-96: the grade the Evidence module would give a short written explanation, in
+    [0, 1], from the true state (IDEA, PATTERN or not known) plus noise."""
+    mean = EXPLANATION_MEAN[state.depth if state.known else None]
+    g = mean + EXPLANATION_SD * draws.normal("explanation", key)
+    return round(min(1.0, max(0.0, g)), 3)
