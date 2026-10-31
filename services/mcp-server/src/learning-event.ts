@@ -6,12 +6,17 @@ const capturedText = z.string().min(1).max(32000).nullable()
 
 export const learningEventSchema = z.strictObject({
   interaction: z.strictObject({
-    question: capturedText,
+    question: capturedText.describe('Complete exact original user message, preserving wording, reasoning, examples, formatting and language. Do not paraphrase, summarize or translate. Use null if exact text is unavailable or not permitted.'),
     answer: capturedText,
   }),
   interaction_type: z.strictObject({
-    mode: z.enum(['conversation', 'practice', 'assessment']),
-    question_format: z.enum(['open_ended', 'multiple_choice', 'true_false', 'coding', 'other', 'none']),
+    mode: z.enum(['conversation', 'practice', 'assessment'])
+      .describe('Purpose and context, including earlier messages: conversation for ordinary help, practice for explicit learning exercises with feedback, assessment for explicit structured evaluation. Format or a submitted answer alone does not determine mode; default to conversation without explicit exercise context.'),
+    question_format: z.enum(['open_ended', 'multiple_choice', 'true_false', 'coding', 'other', 'none'])
+      .describe('Practice or assessment exercise format. Always none for conversation.'),
+  }).refine(({ mode, question_format }) => mode !== 'conversation' || question_format === 'none', {
+    message: 'Conversation interactions require question_format none.',
+    path: ['question_format'],
   }),
   learning_intent: text,
   topics: z.strictObject({
@@ -23,11 +28,12 @@ export const learningEventSchema = z.strictObject({
   knowledge_assessment: z.array(z.strictObject({
     concept: text,
     status: z.enum(['understanding', 'possible_difficulty', 'unknown']),
-    assessment: text,
+    assessment: text.describe('Distinguish demonstrated understanding from self-reported ability; explicitly qualify self-reports as unverified.'),
     evidence: text,
     why: text,
     possible_cause: text.optional(),
-    confidence: z.enum(['low', 'medium', 'high']),
+    confidence: z.enum(['low', 'medium', 'high'])
+      .describe('Model confidence that available evidence supports this status and assessment; not learner confidence, mastery, difficulty severity or proof of a persistent gap. If no meaningful evidence supports an assessment, leave knowledge_assessment empty.'),
   })).max(30),
   recommendations: z.strictObject({
     topics: z.array(z.strictObject({
@@ -40,6 +46,7 @@ export const learningEventSchema = z.strictObject({
       question: text,
       purpose: text,
       difficulty: z.enum(['basic', 'intermediate', 'advanced']),
-    })).max(20).optional(),
+    })).max(20).optional()
+      .describe('Recommend 1-2 focused diagnostic questions when supported by an observed possible gap, uncertainty or verification opportunity. Optional suggestions for later ALI engines, not automatically presented to the learner; do not invent gaps or fill without justification.'),
   }),
 });
