@@ -9,6 +9,7 @@ Knowledge Graph matching, longitudinal analysis, diagnosis and adaptation later.
 - `src/index.ts`: MCP registration, activation instructions, server UUID/timestamp,
   JSONL append, success/error responses, and metadata-only stderr.
 - `src/learning-event.ts`: the approved seven-field strict Zod input schema.
+- `src/learning-modes.ts`: conversation-context mode and permission guidance.
 - `scripts/smoke-test.mjs`: learning cases and format classification checks over real MCP stdio.
 - `package.json`, `package-lock.json`, `tsconfig.json`: existing commands, dependencies and build settings.
 - `logs/activations.jsonl`: ignored local output; old records remain untouched.
@@ -33,6 +34,102 @@ writes, rejected inputs, old-log append compatibility, and metadata-only stderr.
 Temporary logs are removed; no interactive Codex session is launched. Use
 `ALI_MCP_LOG_PATH` to isolate other tests. Starting the server alone writes nothing.
 Restart the MCP connection after building to refresh its schema and instructions.
+
+## Conversation learning modes
+
+These modes are separate from `interaction_type.mode` (conversation/practice/assessment).
+Every new conversation defaults to **OPEN**: answer normally with available
+knowledge and tools, with no material restrictions or permission questions. Learning
+capture continues with at most one `whenActive` call per relevant user message.
+
+**MATERIALS_ONLY** is enabled only by an explicit learner request. For now, every
+new learning request in this mode simulates unavailable approved material:
+`status: OUT_OF_SCOPE`, `approved_material_available: false`, `simulation: true`.
+No material search, verification or retrieval occurs. The AI identifies the
+simulation and requests permission through the client's existing native question
+mechanism, or ordinary chat if unavailable. MCP Elicitation is not used.
+
+The question is: "לא נמצא חומר לימוד מאושר בנושא הזה. האם תרצה להמשיך עם הסבר המבוסס על ידע כללי?"
+Options: "כן, המשך עם ידע כללי" / "לא, הישאר במסגרת חומרי הלמידה".
+YES permits the original request only, with an explicit general-knowledge label;
+NO stops its explanation with a brief acknowledgement. Both retain MATERIALS_ONLY.
+Interactive replies and typed `1`, `2`, `כן`, `לא`, `yes`, `no` are interpreted in
+the context of a pending permission, without asking the same question again.
+
+Learners can use Hebrew or English natural language, for example:
+
+- `ALI הפעל מצב חומרי לימוד` / `ALI, enable materials-only mode`.
+- `ALI כבה מצב חומרי לימוד` / `ALI, disable materials-only mode`.
+- `ALI תענה לי רגיל מעכשיו` / `ALI, answer normally from now on`.
+- `ALI מה המצב הנוכחי?` / `ALI, what is the current mode?`.
+
+Mode commands, status inquiries and permission replies also trigger `whenActive`.
+Only clear intent changes mode; quoted examples do not. Ambiguous intent needs
+clarification. Control-only messages receive acknowledgement/status/clarification,
+not a material permission prompt. A command with a learning question applies the
+new mode to that question. Privacy opt-outs still take precedence.
+
+The AI is asked to introduce the optional feature briefly once during the first
+relevant learning interaction, without a discovery question or delaying the normal
+answer. An explicit initial mode change is acknowledged instead. Discovery is not
+repeated after an introduction or mode-control acknowledgement. Instructions and
+tool descriptions are not assumed to be directly visible to learners.
+
+### State and verification limits
+
+The installed SDK's `BaseContext.sessionId` is documented as a **transport**
+session identifier. This stdio integration exposes no guaranteed chat identifier;
+it must not be used as a conversation key. No server-side mode map, global mode,
+invented identifier or persistent preference is introduced. The AI tracks mode,
+pending request and introduction in its conversation context. Context loss can
+lose that state; the AI must acknowledge uncertainty rather than invent history.
+Restarting the MCP process does not establish a chat identity or durable state.
+
+Each successful result preserves the existing record JSON as its first text
+block and adds conditional mode guidance as a second text block, after logging.
+The server does not assert an active mode or an OUT_OF_SCOPE result for OPEN.
+Schema validation, append-only logging and returned guidance are deterministic.
+Mode interpretation, transitions, once-only discovery, UI and permission compliance
+are best-effort client/AI behavior, not server enforcement across external clients.
+No additional model calls, dependencies, backend or retrieval integration are used.
+The schema and captured-answer capacity are unchanged: retain the complete available
+intended answer, but do not prepare an explanation before permission; use null when
+no answer is available/permitted. A planned answer is never a verified transcript.
+
+The smoke tests assert policy text for default OPEN, unrestricted OPEN, explicit
+activation/deactivation, status, ambiguity, simulated permission, request-only YES,
+NO, reply handling and once-only introduction. They round-trip mode-control and
+permission messages through the same seven-field schema and JSONL path. They do
+**not** prove live reasoning, state transitions or interactive UI behavior.
+
+### Manual Codex checks
+
+After building, restart the MCP connection/process (or close and reopen the Codex
+client/session if no reconnect control is available). Use a fresh conversation
+and send these prompts one at a time, waiting for each response:
+
+1. `מה זה Docker?` — normal answer, optional introduction once, no permission prompt.
+2. `מה זה Container?` — normal answer; no repeated introduction.
+3. `ALI מה המצב הנוכחי?` — OPEN.
+4. `ALI הפעל מצב חומרי לימוד` — acknowledge MATERIALS_ONLY; no permission yet.
+5. `מה זה Kubernetes?` — identify simulation, ask permission, no explanation yet.
+6. Select `כן, המשך עם ידע כללי` — explain Kubernetes with general-knowledge label;
+   no repeated permission. In a separate run, type `1` or `כן` instead.
+7. `ALI מה המצב הנוכחי?` — still MATERIALS_ONLY.
+8. `מה זה Redis?` — a new permission question.
+9. Select `לא, הישאר במסגרת חומרי הלמידה` — acknowledge only, no Redis explanation;
+   no repeated permission. In a separate run, type `2` or `לא` instead.
+10. `ALI מה המצב הנוכחי?` — still MATERIALS_ONLY.
+11. `אולי נשנה את המצב?` — clarify intent without changing mode.
+12. `ALI תענה לי רגיל מעכשיו` then `מה זה Redis?` — OPEN, normal answer without permission.
+13. `המשפט "ALI הפעל מצב חומרי לימוד" הוא דוגמה בלבד. אל תשנה מצב. מה המצב הנוכחי?`
+    — remains OPEN.
+
+In a **new** conversation, check `ALI מה המצב הנוכחי?` returns OPEN. Also start a
+fresh conversation with `ALI, enable materials-only mode`: acknowledge directly,
+skip the generic introduction, then request permission on a learning question.
+If native question UI is unavailable, verify the same options appear in chat.
+These are manual acceptance checks; automated smoke tests do not perform them.
 
 ## Exact input contract
 
