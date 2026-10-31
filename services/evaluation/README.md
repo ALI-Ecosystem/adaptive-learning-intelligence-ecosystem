@@ -154,3 +154,64 @@ harness/     adapter95 (rounds, gate split, truth for scoring), validate95, repo
 * Validation truth = what actually inflated the rating (bias, help boost) on the clean-norm
   scale: a gap-to-correctness truth labelled calibrated weak learners overconfident (regression
   artifact) — the measure did not, the truth did.
+
+## SCRUM-96 — retention, near transfer and error repetition
+
+Status: **simulator extensions, outcome engine and validation done**; results in
+`runs/scrum96/results.md` (generated), report in the team Drive.
+
+The SCRUM-94 verdict says whether the learner performs at the target right after the
+intervention. `outcome/` follows the same case over time and turns later independent answers
+into retention, near-transfer and error-repetition outcomes. It stays a measurement: it does
+not schedule checks (the ALE does), does not judge novelty (the record's activity type does),
+does not grade explanations (the Evidence module does) and does not diagnose.
+
+### Simulator extensions (`--scrum96`, all off by default)
+
+With the defaults the SCRUM-93 and SCRUM-95 files are byte-identical
+(`tests/test_simulator96.py`, hashes taken before the change).
+
+| Decision | Extension |
+|---|---|
+| Q2 A | Two levels of knowing: IDEA or PATTERN. Ordinary items need either; a `TRANSFER_PROBLEM` item needs the idea. New population `LEARNS_PATTERN` (learns only the pattern). |
+| Q2a A | 4 transfer problems per concept after the ordinary items of the immediate post-test **and** of the delayed test, from a separate transfer bank (`REC-T01`…). |
+| Q4 B | `ERRORS_THEN_LEARNS`: practice full of one misconception's option; after the intervention a wrong practice answer can teach (`p_T_err`; Li et al. 2025 report only an association — project assumption); learning clears the misconception. |
+| Q5 B | Half the learners write one explanation per concept per test; the simulator plays the Evidence module's grader (grade 0..1 from the true depth). |
+| Q7 B | Delayed test of 8 items (default stays 3). |
+
+### Outcome engine (`outcome/engine.py`, `outcome/misconception.py`)
+
+* Eligibility: the SCRUM-94 gate unchanged (practice = `IN_TREATMENT`, help, retries and seen
+  items excluded), without its retention cut.
+* Each counted answer is one observation of one dimension: `TRANSFER` (declared
+  `TRANSFER_PROBLEM`), `EXPLANATION` (graded open answer, reported only), else `ACQUISITION`
+  before `t_R`, `RETENTION` at or after it.
+* `t_R` = treatment end + h·log2(1/0.9) (2.13 days at h = 14 d; the stand-in counts no
+  reinforcements, so it is the same for every case); overdue at twice that interval (Q1/1a:
+  answers before `t_R` are acquisition).
+* ACQUISITION / RETENTION / TRANSFER: the SCRUM-94 statistic (BF ≥ 4 and P > 0.5) on their
+  own observations, same prior.
+* Error repetition (Q3, 3b, 3c, 3d A): for each misconception known in the misconception state
+  at delivery (stand-in built from the answers before delivery, LS 3.8 rules), the rate of
+  picking its option on discriminating items, prior = that state, H: rate > slip/3. It reads
+  only the windows where the target was shown (finding 1: guesses on a failed transfer
+  problem are not misconception evidence).
+* Table, first match wins: NOT_EVALUABLE · ILLUSION_SUSPECTED (only with a SCRUM-95 perceived
+  input) · NOT_YET_DEMONSTRATED · NOT_RETAINED · MISCONCEPTION_PERSISTS · SHALLOW ·
+  DEMONSTRATED_RETAINED · DEMONSTRATED · INSUFFICIENT_EVIDENCE.
+* A new version whenever the output fingerprint changes (an answer, or time making a check
+  due / overdue); every version kept; each equals a fresh evaluation at its moment (tested).
+* Coverage: every check is `NOT_DUE` / `WAITING` / `OVERDUE` / `RESOLVED` / `RESOLVED_LATE`;
+  missing checks are listed, never guessed. The harness plays the ALE: for 20% of learners the
+  delayed check never happens.
+
+```
+./scrum96.sh test        all tests (SCRUM-93, 94, 95, 96)
+./scrum96.sh all [N]     calibration + run + validation -> runs/scrum96/results.md
+./scrum96.sh regress     the defaults still give the earlier files
+./scrum96.sh repro       validation twice, byte for byte
+./scrum96.sh example     one case, version by version
+
+outcome/     engine (dimensions, table, versions, coverage), misconception (state, repetition)
+harness/     adapter96 (activity types, explanations, ALE stand-in, truth), validate96, example96
+```

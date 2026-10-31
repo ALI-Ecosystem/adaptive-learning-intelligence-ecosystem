@@ -33,6 +33,20 @@ Added for SCRUM-95 (all default to "off", so every SCRUM-93 population is unchan
               HELP_INFLATED - decision SCRUM-95 Q5 option B. The direction is anchored in
               Bassner et al. (2025): fluent AI help is read as evidence of learning; the
               size and the fading are PROJECT ASSUMPTIONS.
+
+Added for SCRUM-96 (all default to "off", so every earlier population is unchanged):
+  p_idea      when the learner comes to know a concept, the chance that what he learned is
+              the IDEA (enough for a new kind of problem) rather than only the PATTERN of the
+              practised problems. 1.0 everywhere except LEARNS_PATTERN, where it is 0 -
+              decision SCRUM-96 Q2 option A (two levels of knowing). PROJECT ASSUMPTION.
+  p_T_err     extra learning chance on a practice item answered WRONG after the
+              intervention (decision SCRUM-96 Q4 option B). Li et al. (2025) report that, for
+              novices, repeated practice errors were ASSOCIATED with larger gains; making the
+              error a cause is a PROJECT ASSUMPTION. Only after the intervention, so the
+              twin (who never gets one) is untouched and the twin coupling still holds.
+  p_M_clear_on_learn
+              chance that a held misconception goes away at the moment the learner comes to
+              know the concept (ERRORS_THEN_LEARNS only). PROJECT ASSUMPTION.
 """
 from dataclasses import dataclass, replace
 
@@ -55,6 +69,9 @@ class Params:
     p_T_help: float = 0.0
     help_conf_boost: float = 0.0
     boost_half_life_days: float = 1.0
+    p_idea: float = 1.0
+    p_T_err: float = 0.0
+    p_M_clear_on_learn: float = 0.0
 
 
 LEARNS = Params(p_T_int=0.70, p_T_after=0.30)
@@ -106,9 +123,31 @@ POPULATIONS_95 = (
                "practice item can teach him", replace(HELP_LEARNING, p_T_help=0.15)),
 )
 
+# ---- SCRUM-96 populations (decisions Q2, Q4) -----------------------------------------------
+# Not part of POPULATIONS either, for the same reason. A SCRUM-96 run asks for POPULATIONS_96.
+#   LEARNS_PATTERN     learns like LEARNS, but only the pattern: practised kinds of problem
+#                      right, a new kind of problem (TRANSFER_PROBLEM) like a learner who
+#                      does not know -> expected SHALLOW
+#   ERRORS_THEN_LEARNS starts not knowing and holding a misconception that pulls hard, so
+#                      practice is full of the same wrong option; every wrong practice answer
+#                      after the intervention can teach, and learning clears the misconception
+#                      -> expected DEMONSTRATED(_RETAINED), never MISCONCEPTION_PERSISTS
+POPULATIONS_96_NEW = (
+    Population("LEARNS_PATTERN", "learns from the intervention, but only the pattern of the "
+               "practised problems, not the idea", replace(LEARNS, p_idea=0.0)),
+    Population("ERRORS_THEN_LEARNS", "starts not knowing, repeats one misconception's option "
+               "in practice, learns from those errors and drops the misconception",
+               Params(p_L0=0.0, p_T=0.02, p_T_int=0.05, p_T_after=0.15, p_T_err=0.25,
+                      p_M_unknown=0.85, p_M_clear_on_learn=1.0), holds_misconception=True),
+)
+POPULATIONS_96 = POPULATIONS + POPULATIONS_96_NEW
+
 ALL_POPULATIONS = POPULATIONS + POPULATIONS_95
-BY_NAME = {p.name: p for p in ALL_POPULATIONS}
-SCRUM95_FIELDS = ("p_T_help", "help_conf_boost", "boost_half_life_days")
+BY_NAME = {p.name: p for p in ALL_POPULATIONS + POPULATIONS_96_NEW}
+# fields written to truth.jsonl only when they differ from the default, so an earlier
+# population writes exactly the earlier bytes
+SCRUM95_FIELDS = ("p_T_help", "help_conf_boost", "boost_half_life_days",
+                  "p_idea", "p_T_err", "p_M_clear_on_learn")
 
 JITTER = (0.75, 1.25)       # per-learner multiplier on p_T_int and p_T_after (individual BKT)
 

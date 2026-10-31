@@ -15,6 +15,13 @@ SCRUM-95 (simulator/config.py; all off by default):
   * assisted_items right after each round's unaided POST_TEST items, items answered WITH
                    help (activity POST_TEST, had_help true). They teach nothing.
   * confidence     may be missing (null) - see config.py.
+SCRUM-96 (config.py; all off by default):
+  * transfer_items  after each POST_TEST's unaided items (and after any assisted items) and
+                    after the DELAYED_TEST's items: problems of a new kind on the same concept,
+                    payload activity_type TRANSFER_PROBLEM. They teach nothing.
+  * delayed_items   length of the DELAYED_TEST (3 by default)
+  * explanation_share  some learners write one explanation per concept at the end of each
+                    test: payload activity EXPLANATION, response_type OPEN, grade 0..1.
 Round 1 uses exactly the SCRUM-93 random-number keys, so with the defaults the files are
 byte-identical to SCRUM-93's.
 
@@ -34,10 +41,10 @@ from dataclasses import asdict
 from datetime import datetime, timedelta, timezone
 
 from .concepts import CONCEPTS
-from .config import DEFAULT, SimConfig, items_needed
+from .config import DEFAULT, SimConfig, items_needed, transfer_items_needed
 from .draws import Draws
-from .items import BANK, ITEMS_PER_CONCEPT, build_bank
-from .learner import DAY, Learner
+from .items import BANK, ITEMS_PER_CONCEPT, TRANSFER, TRANSFER_BANK, build_bank
+from .learner import DAY, Learner, explanation_grade
 from .populations import POPULATIONS, SCRUM95_FIELDS, Params, learner_params
 
 EPOCH = datetime(2026, 1, 5, 8, 0, tzinfo=timezone.utc)
@@ -73,29 +80,56 @@ def _params_out(p: Params) -> dict:
 
 
 def plan_timeline(d: Draws, post_items: int = POST_ITEMS, bank: dict = BANK,
-                  cfg: SimConfig = DEFAULT) -> tuple[list, dict]:
+                  cfg: SimConfig = DEFAULT, explains: bool = False) -> tuple[list, dict]:
     """The schedule only - which item when. Behaviour comes later."""
     picks = {c.source_id: d.shuffled([it.item_id for it in bank[c.source_id]], "items", c.source_id)
              for c in CONCEPTS}
     by_id = {it.item_id: it for items in bank.values() for it in items}
     used = {cid: 0 for cid in picks}
+    if cfg.transfer_items:
+        tpicks = {c.source_id: d.shuffled([it.item_id for it in TRANSFER_BANK[c.source_id]],
+                                          "transfer-items", c.source_id) for c in CONCEPTS}
+        by_id.update({it.item_id: it for items in TRANSFER_BANK.values() for it in items})
+        tused = {cid: 0 for cid in tpicks}
     events, times = [], {}
     t = d.uniform(0, 30 * DAY, "start")
     times["start"] = t
 
-    def items_phase(phase, n, spacing, pkey=None, rnd=None, assisted=False):
+    def items_phase(phase, n, spacing, pkey=None, rnd=None, assisted=False, transfer=False):
         nonlocal t
         pkey = pkey or phase
         slots = [(c.source_id, j) for c in CONCEPTS for j in range(n)]
         times[pkey + "_start"] = t
         for cid, j in d.shuffled(slots, "order", pkey):
-            item = by_id[picks[cid][used[cid]]]
-            used[cid] += 1
+            if transfer:
+                item = by_id[tpicks[cid][tused[cid]]]
+                tused[cid] += 1
+            else:
+                item = by_id[picks[cid][used[cid]]]
+                used[cid] += 1
             events.append({"kind": "EVIDENCE", "t": t, "phase": phase, "concept": cid,
                            "item": item, "slot": f"{pkey}:{cid}:{j}",
-                           "pkey": pkey, "round": rnd, "assisted": assisted})
+                           "pkey": pkey, "round": rnd, "assisted": assisted,
+                           **({"transfer": True} if transfer else {})})
             t += spacing
         times[pkey + "_end"] = t - spacing
+
+    def explanations(phase, pkey, rnd=None):
+        """SCRUM-96: one written explanation per concept, graded by the Evidence module."""
+        nonlocal t
+        for c in CONCEPTS:
+            events.append({"kind": "EXPLANATION", "t": t, "phase": phase,
+                           "concept": c.source_id, "slot": f"{pkey}:{c.source_id}",
+                           "pkey": pkey, "round": rnd})
+            t += 3 * MINUTE
+
+    def test_tail(phase, s, rnd=None):
+        """SCRUM-96 additions at the end of a test (nothing when the features are off)."""
+        if cfg.transfer_items:
+            items_phase(phase, cfg.transfer_items, 2 * MINUTE, "TRANSFER_" + phase + s, rnd,
+                        transfer=True)
+        if explains:        # only an explaining learner spends the time (independent review)
+            explanations(phase, "EXPLAIN_" + phase + s, rnd)
 
     items_phase("PRE_TEST", 3, 2 * MINUTE)
     for r in range(1, cfg.rounds + 1):
@@ -116,14 +150,16 @@ def plan_timeline(d: Draws, post_items: int = POST_ITEMS, bank: dict = BANK,
         if cfg.assisted_items:
             items_phase("POST_TEST", cfg.assisted_items, 2 * MINUTE, "ASSISTED" + s, r,
                         assisted=True)
+        test_tail("POST_TEST", s, r)
     delay = d.log_uniform(1, 21, "gap", "delayed")
     times["delay_days"] = delay
     t += delay * DAY
-    items_phase("DELAYED_TEST", 3, 2 * MINUTE)
+    items_phase("DELAYED_TEST", cfg.delayed_items, 2 * MINUTE)
+    test_tail("DELAYED_TEST", "")
     return events, times
 
 
-def _checkpoint(real, twin, t: float) -> dict:
+def _checkpoint(real, twin, t: float, depth: bool = False) -> dict:
     """The truth a test measures: the state when the test BEGINS. Answered items are
     learning opportunities (BKT), so a test can still teach; the state at its end would
     credit learning that its own answers could not show."""
@@ -135,12 +171,14 @@ def _checkpoint(real, twin, t: float) -> dict:
         cp[c.concept_id] = {"known": k, "twin_known": tk,
                             "learned_due_to_intervention": k and not tk,
                             "misconception": real.states[c.source_id].misconception}
+        if depth:
+            cp[c.concept_id]["depth"] = real.states[c.source_id].depth
     return {"at": _iso(t), "concepts": cp}
 
 
 def _checkpoint_name(ev) -> str | None:
     """immediate, immediate_r2, ..., delayed - for the first unaided item of a test."""
-    if ev["phase"] not in CHECKPOINTS or ev.get("assisted"):
+    if ev["phase"] not in CHECKPOINTS or ev.get("assisted") or ev.get("transfer"):
         return None
     name = CHECKPOINTS[ev["phase"]]
     r = ev.get("round")
@@ -159,7 +197,8 @@ def simulate_learner(seed: int, index: int, pop, post_items: int = POST_ITEMS,
     misconceptions = ({c.source_id: d.choice([m.misconception_id for m in c.misconceptions],
                                              "holds", c.source_id) for c in CONCEPTS}
                       if pop.holds_misconception else {})
-    events, times = plan_timeline(d, post_items, bank, cfg)
+    explains = cfg.explanation_share > 0 and d.bernoulli(cfg.explanation_share, "explains")
+    events, times = plan_timeline(d, post_items, bank, cfg, explains)
     never_reports = cfg.never_report > 0 and d.bernoulli(cfg.never_report, "never_report")
 
     real = Learner(params, d, with_intervention=True)
@@ -183,11 +222,29 @@ def simulate_learner(seed: int, index: int, pop, post_items: int = POST_ITEMS,
             body["record"] = {"source_record_id": rec_id, "occurred_at": _iso(t),
                               "payload": {"activity": "INTERVENTION", "kind": "INSTRUCT",
                                           "intervention_id": intervention_ids[rnd]}}
+        elif ev["kind"] == "EXPLANATION":
+            real.apply_forgetting(cid, t)
+            twin.apply_forgetting(cid, t)
+            st = real.states[cid]
+            grade = explanation_grade(st, d, key)
+            short = next(c.short for c in CONCEPTS if c.source_id == cid)
+            body["operation"] = "ADD_EVIDENCE"
+            body["record"] = {"source_record_id": rec_id, "occurred_at": _iso(t),
+                              "payload": {"activity": "EXPLANATION", "response_type": "OPEN",
+                                          "item_id": f"{short}-X-{ev['pkey']}",
+                                          "test": ev["phase"], "grade": grade,
+                                          "correct": grade >= 0.5, "chosen_option": None,
+                                          "had_help": False, "attempt_number": 1,
+                                          "confidence": None}}
+            trace.append({"source_record_id": rec_id, "concept_source_id": cid,
+                          "phase": "EXPLANATION", "known": st.known,
+                          "twin_known": twin.states[cid].known, "misconception": st.misconception,
+                          "path": "EXPLANATION", "depth": st.depth, "grade": grade})
         else:
             item = ev["item"]
             cp_name = _checkpoint_name(ev)
             if cp_name and abs(t - times[ev["pkey"] + "_start"]) < 1e-6:
-                checkpoints[cp_name] = _checkpoint(real, twin, t)
+                checkpoints[cp_name] = _checkpoint(real, twin, t, cfg.scrum96)
             real.apply_forgetting(cid, t)
             twin.apply_forgetting(cid, t)
             st, tw = real.states[cid], twin.states[cid]
@@ -195,9 +252,10 @@ def simulate_learner(seed: int, index: int, pop, post_items: int = POST_ITEMS,
             ans, had_help = real.answer(item, t, ev["phase"] == "PRACTICE", key,
                                         help_forced=ev.get("assisted", False))
             if ev["phase"] == "PRACTICE":
-                # the twin practises the same item and gets the same help (same keyed draw)
-                real.practice_opportunity(cid, t, key, had_help)
-                twin.practice_opportunity(cid, t, key, had_help)
+                # the twin practises the same item and gets the same help (same keyed draw);
+                # the learner's own correctness matters only after HIS intervention (p_T_err)
+                real.practice_opportunity(cid, t, key, had_help, ans.correct)
+                twin.practice_opportunity(cid, t, key, had_help, ans.correct)
             reported = True
             if cfg.masks_confidence:
                 reported = (not never_reports and
@@ -208,6 +266,8 @@ def simulate_learner(seed: int, index: int, pop, post_items: int = POST_ITEMS,
                        "confidence": ans.confidence if reported else None}
             if ev["phase"] == "PRACTICE":
                 payload["intervention_id"] = intervention_ids[rnd]
+            if item.kind == TRANSFER:
+                payload["activity_type"] = TRANSFER
             body["operation"] = "ADD_EVIDENCE"
             body["record"] = {"source_record_id": rec_id, "occurred_at": _iso(t),
                               "payload": payload}
@@ -220,6 +280,8 @@ def simulate_learner(seed: int, index: int, pop, post_items: int = POST_ITEMS,
                             "confidence_reported": reported,
                             "confidence_boost": round(ans.boost, 6),
                             "confidence_uninflated": ans.uninflated})
+            if cfg.scrum96:
+                row.update({"depth": st.depth, "item_kind": item.kind})
             trace.append(row)
         answers.append(body)
 
@@ -239,6 +301,8 @@ def simulate_learner(seed: int, index: int, pop, post_items: int = POST_ITEMS,
                              for t, c, e in twin.transitions],
         "trace": [dict(r, concept_id=cid_to_uuid[r.pop("concept_source_id")]) for r in trace],
     }
+    if cfg.scrum96:
+        truth["explains"] = explains
     if cfg.extended:
         truth["never_reports_confidence"] = never_reports
         truth["rounds"] = [{"round": r, "intervention_id": intervention_ids[r],
@@ -260,6 +324,8 @@ def simulate(seed: int, n_per_population: int, populations=POPULATIONS,
     if used > items_per_concept:
         raise ValueError(f"{used} items per concept needed, the bank has {items_per_concept}: "
                          "no item may be shown twice")
+    if transfer_items_needed(config) > len(next(iter(TRANSFER_BANK.values()))):
+        raise ValueError("the transfer bank is too small: no item may be shown twice")
     bank = BANK if items_per_concept == ITEMS_PER_CONCEPT else build_bank(items_per_concept)
     slots = [(p.name, j) for p in populations for j in range(n_per_population)]
     order = Draws(seed, -2).shuffled(slots, "population-order")
@@ -274,6 +340,8 @@ def simulate(seed: int, n_per_population: int, populations=POPULATIONS,
     out = {"seed": seed, "n_per_population": n_per_population,
            "populations": [p.name for p in populations], "answers": answers, "truth": truth,
            "post_items": post_items, "items_per_concept": items_per_concept, "bank": bank}
+    if config.transfer_items:
+        out["bank"] = {cid: items + TRANSFER_BANK[cid] for cid, items in bank.items()}
     if config.extended:
         out["config"] = asdict(config)
     return out
