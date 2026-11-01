@@ -215,3 +215,49 @@ With the defaults the SCRUM-93 and SCRUM-95 files are byte-identical
 outcome/     engine (dimensions, table, versions, coverage), misconception (state, repetition)
 harness/     adapter96 (activity types, explanations, ALE stand-in, truth), validate96, example96
 ```
+
+## SCRUM-97 — case analysis log
+
+The qualitative half of the evaluation (proposal success criterion 8): individual cases,
+each traced from the known truth to the final output, labelled `CORRECT` / `WRONG` /
+`UNCERTAIN`, and for every wrong output the layer at fault (Weibelzahl's layers, as in
+Jeremić et al. 2009). A **reporting tool**: it calls the SCRUM-94/95/96 code exactly as
+their validations do and never changes a rule, verdict or threshold. Simulated learners only.
+
+```
+./scrum97.sh test          all tests (SCRUM-93 ... 97)
+./scrum97.sh data          the runs the SCRUM-94/95/96 reports used (skips those that exist)
+./scrum97.sh log           build, select, render, check -> runs/scrum97/
+./scrum97.sh repro         the log twice, compared byte for byte
+./scrum97.sh agree SHEET   blind-review agreement (% and Cohen's kappa) against the key
+```
+
+* **Pre-registered** in `caselog/spec.py` (its SHA-256 is in the manifest): case format
+  `ali.eval.case/v1`, label rules, selection rule, attribution chain, review protocol, and
+  the two dated revisions R1 / R2 with their reasons.
+* **Runs** stay separate (decision 1): R94 = `seed-93-L8`, R95 = `seed-95`, R96 = `seed-96`.
+  A stage that did not run in a case's run is `NOT_RUN_IN_THIS_RUN`; future modules
+  (Diagnosis, ALE) are `NOT_BUILT_YET` slots of the same format.
+* **Labels** per dimension against that mission's truth (decision 2: "knows now" decides;
+  "learned because of the intervention" is shown only), plus an overall label
+  (WRONG > UNCERTAIN > CORRECT). `NOT_OBSERVED` = the dimension read no answer (coverage);
+  `NOT_SCORABLE` = the truth changed inside a pooled window. A SCRUM-96 outcome that makes a
+  weaker claim that is still true is `UNCERTAIN (INCOMPLETE)`.
+* **Attribution** (decision 4): input data → adaptation decision → interaction → inference,
+  on the answers the dimension read; every wrong dimension also `points_to` the rule.
+  Counterfactual replays (missing ratings filled from the truth; early delayed answers
+  removed) test the attribution on the selected cases — reported, never a label.
+* **Selection**: S1 one case per run × population × family × possible output (empty cells
+  listed with the reason), S2 every wrong dimension per kind or 5 at random, S3 two
+  uncertain per family and population. Draws are keyed hashes of the case id.
+* **Checks**: every rendered case against the raw `answers.jsonl` / `truth.jsonl` (each
+  answer line, each dimension line, each truth); a mutation test shows the check can fail.
+* **Blind review** (decision 5): `runs/scrum97/review/` goes to one external reviewer
+  (30 items: 10 wrong, 10 uncertain, 10 correct; population hidden); `review_key/` stays
+  with the team.
+
+```
+caselog/     spec (pre-registered), common (labels, attribution), build94/95/96, log
+             (selection, summary, render, check, review), coding_guide.md
+harness/     case97 (the log), review97 (agreement)
+```
